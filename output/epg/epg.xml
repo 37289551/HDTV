@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<tv date="20250423050416 +0800">
+<tv date="20250423073411 +0800">
 	<channel id="CETV1">
 		<display-name lang="zh">CETV1</display-name>
 	</channel>
@@ -6249,6 +6249,12 @@
 	<programme channel="黑莓动画" start="20250423105600 +0800" stop="20250423122400 +0800">
 		<title lang="zh">海绵宝宝：水兵陆战队</title>
 	</programme>
+	<programme channel="黑莓动画" start="20250423122400 +0800" stop="20250423135700 +0800">
+		<title lang="zh">蜡笔小新：梦境世界大突击</title>
+	</programme>
+	<programme channel="黑莓动画" start="20250423135700 +0800" stop="20250423150300 +0800">
+		<title lang="zh">狐妖小红娘b7月红2</title>
+	</programme>
 	<channel id="黑莓电影">
 		<display-name lang="zh">黑莓电影</display-name>
 	</channel>
@@ -6275,6 +6281,9 @@
 	</programme>
 	<programme channel="黑莓电影" start="20250423113100 +0800" stop="20250423130800 +0800">
 		<title lang="zh">站住！小偷</title>
+	</programme>
+	<programme channel="黑莓电影" start="20250423130800 +0800" stop="20250423144400 +0800">
+		<title lang="zh">特种兵归来之绝地营救</title>
 	</programme>
 	<channel id="黑龙江卫视">
 		<display-name lang="zh">黑龙江卫视</display-name>
