@@ -1,3 +1,2 @@
-php.jdshipin.com/TVOD
 14.153.183.65
-39.164.180.36
+php.jdshipin.com/TVOD
