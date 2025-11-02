@@ -17,6 +17,8 @@ CCTV-14
 CCTV-15
 CCTV-16
 CCTV-17
+CETV1
+CETV2
 CGTN,https://zby.130519.xyz/PLTV/11/224/3221226016/index.m3u8$!
 CGTN,http://iptv.huuc.edu.cn/hls/cgtnhd.m3u8$!
 CGTN英语,https://0472.org/hls/cgtn.m3u8$!
@@ -92,6 +94,7 @@ CCTV-14,http://iptv.huuc.edu.cn/hls/cctv14hd.m3u8$!
 西藏卫视
 新疆卫视
 云南卫视
+大湾区卫视
 
 北京卫视,http://go.bkpcp.top/mg/bjws$!
 东方卫视,http://go.bkpcp.top/mg/dfws$!
@@ -160,6 +163,16 @@ BBC,http://198.16.100.186:8278/bbc2_antik/playlist.m3u8?tid=MABA3261818232618182
 时尚TV,http://lb.streaming.sk/fashiontv/stream/chunklist_w765383554.m3u8$!
 
 地方频道,#genre#
+环球旅游
+熊猫频道
+上海新闻综合
+高清大片
+经典香港电影
+抗战经典影片
+新片放映厅
+CHC影迷电影
+南方影视
+陕西新闻资讯频道
 江苏新闻,http://jinhu-tv-hls.cm.jstv.com/jinhu-tv/jinhuzh.m3u8?zjiangsd$!
 无锡新闻,http://stream.thmz.com/wxtv3/playlist.m3u8$!
 无锡新闻,http://stream.thmz.com/wxtv1/playlist.m3u8?_upt=b27ac8431707368778$!
@@ -191,6 +204,8 @@ DJ音乐3,https://vd3.bdstatic.com/mda-ndd9pwn5djrh80tn/480p/h264_delogo/1649919
 金鹰纪实,http://iptv.huuc.edu.cn/hls/gedocu.m3u8$!
 
 动漫频道,#genre#
+经典动画大集合
+优漫卡通频道
 金鹰卡通,https://zby.130519.xyz/PLTV/11/224/3221226094/index.m3u8$!
 哈哈炫动,https://zby.130519.xyz/PLTV/11/224/3221226161/index.m3u8$!
 哈哈炫动,https://zby.130519.xyz/PLTV/11/224/3221226175/index.m3u8$!
