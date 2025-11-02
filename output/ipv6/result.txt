@@ -118,6 +118,7 @@ CCTV美洲,http://go.bkpcp.top/mg/cctv4m
 西藏卫视,http://go.bkpcp.top/mg/xzws
 新疆卫视,http://go.bkpcp.top/mg/xjws
 云南卫视,http://go.bkpcp.top/mg/ynws
+大湾区卫视,http://gslbmgsplive.miguvideo.com/wd_r3/2018/nfmedia/nfws/1000/index.m3u8?msisdn=20251101160051cf6e4db2893c4ecba1937b5927053145&mdspid=&spid=699054&netType=0&sid=2200322852&pid=2028597139&timestamp=20251101160051&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=608917627&ParentNodeID=-99&assertID=2200322852&client_ip=106.13.250.88&SecurityKey=20251101160051&promotionId=&mvid=2200322852&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=acd64a7d796b936cdc10c897df721366&ddCalcu=6a6ce3d01682407af7dd779986cb0913c6dc
 
 特区频道,#genre#
 BBC,https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8
@@ -130,6 +131,7 @@ CNA,https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index
 时尚TV,http://lb.streaming.sk/fashiontv/stream/chunklist_w765383554.m3u8
 
 地方频道,#genre#
+上海新闻综合,http://gslbmgsplive.miguvideo.com/wd_r4/dfl/xinwenzonghehd/1200/index.m3u8?msisdn=202511011600528a818d6b3c254cb39abd414493026cfe&mdspid=&spid=699212&netType=0&sid=5500002275&pid=2028597139&timestamp=20251101160052&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=651632657&ParentNodeID=-99&assertID=5500002275&client_ip=106.13.250.88&SecurityKey=20251101160052&promotionId=&mvid=5100001716&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=8ddbf10060e3b8e39d167e600c600bb3&ddCalcu=38bdebd00b10f061c0000660ee736b18de93
 江苏新闻,http://jinhu-tv-hls.cm.jstv.com/jinhu-tv/jinhuzh.m3u8?zjiangsd
 无锡新闻,http://stream.thmz.com/wxtv3/playlist.m3u8
 无锡新闻,http://stream.thmz.com/wxtv1/playlist.m3u8?_upt=b27ac8431707368778
