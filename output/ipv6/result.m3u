@@ -207,6 +207,10 @@ http://183.236.161.100:8962/live1173.m3u8
 https://live.yjtvw.com:8081/live/yjtv1.m3u8
 #EXTINF:-1 tvg-name="桂林综合" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/桂林综合.png" group-title="地方频道",桂林综合
 https://pull.gltvs.com/live/glxw/playlist.m3u8?v=b0528684bf934e120e1c30fc808e6576&t=1796868188
+#EXTINF:-1 tvg-name="上海纪实" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/上海纪实.png" group-title="地方频道",上海纪实
+http://iptv.huuc.edu.cn/hls/docuchina.m3u8
+#EXTINF:-1 tvg-name="金鹰纪实" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/金鹰纪实.png" group-title="地方频道",金鹰纪实
+http://iptv.huuc.edu.cn/hls/gedocu.m3u8
 #EXTINF:-1 tvg-name="DJ音乐1" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/DJ音乐1.png" group-title="地方频道",DJ音乐1
 https://vd3.bdstatic.com/mda-nda3jnm5kjr0pzkk/480p/h264_delogo/1649645090089685317/mda-nda3jnm5kjr0pzkk.mp4
 #EXTINF:-1 tvg-name="DJ音乐1" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/DJ音乐1.png" group-title="地方频道",DJ音乐1
@@ -237,10 +241,6 @@ https://vd2.bdstatic.com/mda-nde1zha2ickju5ui/480p/h264_delogo/16499862026992667
 https://vd2.bdstatic.com/mda-nde83jtsrx9345ai/480p/h264_delogo/1650001792789333244/mda-nde83jtsrx9345ai.mp4
 #EXTINF:-1 tvg-name="DJ音乐3" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/DJ音乐3.png" group-title="地方频道",DJ音乐3
 https://vd3.bdstatic.com/mda-ndd9pwn5djrh80tn/480p/h264_delogo/1649919370531344965/mda-ndd9pwn5djrh80tn.mp4
-#EXTINF:-1 tvg-name="上海纪实" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/上海纪实.png" group-title="地方频道",上海纪实
-http://iptv.huuc.edu.cn/hls/docuchina.m3u8
-#EXTINF:-1 tvg-name="金鹰纪实" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/金鹰纪实.png" group-title="地方频道",金鹰纪实
-http://iptv.huuc.edu.cn/hls/gedocu.m3u8
 #EXTINF:-1 tvg-name="金鹰卡通" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/金鹰卡通.png" group-title="动漫频道",金鹰卡通
 https://zby.130519.xyz/PLTV/11/224/3221226094/index.m3u8
 #EXTINF:-1 tvg-name="哈哈炫动" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/哈哈炫动.png" group-title="动漫频道",哈哈炫动
