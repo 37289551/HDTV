@@ -46,6 +46,11 @@ jobs:
                   gsub(/CCTV15音乐/, "CCTV-15", channel_name);
                   gsub(/CCTV16奥林匹克/, "CCTV-16", channel_name);
                   gsub(/CCTV17农业农村/, "CCTV-17", channel_name);
+                  gsub(/CCTV4欧洲/, "CCTV欧洲", channel_name);
+                  gsub(/CCTV4美洲/, "CCTV美洲", channel_name);
+                  gsub(/CGTN外语纪录/, "CGTN英语", channel_name);
+                  gsub(/CETV1/, "CETV-1", channel_name);
+                  gsub(/CETV2/, "CETV-2", channel_name);
                   
                   print channel_name "," $0 >> "output/remote.txt"
               }
