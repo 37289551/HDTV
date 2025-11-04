@@ -67,17 +67,17 @@ jobs:
         mkdir -p output
         
         # 如果本地useroutput.txt不存在，创建空文件
-        if [ ! -f output/useroutput.txt ]; then
-          touch output/useroutput.txt
+        if [ ! -f output/userresult.txt ]; then
+          touch output/userresult.txt
         fi
         
         # 合并频道列表，去重处理
-        cat output/useroutput.txt /tmp/mapped_channels.txt | sort | uniq > /tmp/merged_channels.txt
+        cat output/userresult.txt /tmp/mapped_channels.txt | sort | uniq > /tmp/merged_channels.txt
         
         # 检查是否有新频道需要添加
-        if ! cmp -s output/useroutput.txt /tmp/merged_channels.txt; then
+        if ! cmp -s output/userresult.txt /tmp/merged_channels.txt; then
           echo "检测到新的电视频道，正在更新..."
-          cp /tmp/merged_channels.txt output/useroutput.txt
+          cp /tmp/merged_channels.txt output/userresult.txt
         else
           echo "频道列表已是最新，无需更新"
         fi
@@ -92,7 +92,7 @@ jobs:
         if git diff --quiet; then
           echo "没有检测到文件变更"
         else
-          git add output/useroutput.txt
+          git add output/userresult.txt
           git commit -m "自动更新电视频道列表（已标准化频道名称）[skip ci]"
           git push
         fi
