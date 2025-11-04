@@ -16,6 +16,11 @@ jobs:
       - name: 创建输出目录
         run: mkdir -p output
 
+      - name: 清除原有内容
+        run: |
+          # 清空或重新创建remote.txt文件
+          > output/remote.txt
+
       - name: 下载并转换M3U文件
         run: |
           # 下载远程M3U文件
