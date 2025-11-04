@@ -1,3 +1,4 @@
+
 name: Channel List Sync
 
 on:
@@ -49,10 +50,15 @@ jobs:
           s/CCTV17农业农村/CCTV-17/g
         ' /tmp/remote_channels.txt > /tmp/mapped_channels.txt
         
-    - name: Precise channel insertion
+    - name: Save mapped channels to remote.txt
       run: |
         mkdir -p output
+        cp /tmp/mapped_channels.txt output/remote.txt
+        echo "已保存映射后的频道列表到output/remote.txt"
+        echo "保存的频道数量: $(wc -l < output/remote.txt)"
         
+    - name: Precise channel insertion
+      run: |
         if [ ! -f output/userresult.txt ]; then
           echo "目标文件不存在，创建空文件"
           touch output/userresult.txt
@@ -98,8 +104,8 @@ jobs:
         if git diff --quiet; then
           echo "没有检测到文件变更"
         else
-          git add output/userresult.txt
-          git commit -m "精确更新电视频道结构 [skip ci]"
+          git add output/remote.txt output/userresult.txt
+          git commit -m "更新电视频道列表：保存映射结果并精确同步 [skip ci]"
           git push
         fi
 
