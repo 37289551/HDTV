@@ -20,7 +20,7 @@ jobs:
     - name: Fetch channel list from remote source
       run: |
         # 下载远程电视频道列表文件
-        curl -s -o /tmp/remote_channels.txt https://xxx/xxx/interface.txt
+        curl -s -o /tmp/remote_channels.txt https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt
         
     - name: Process channel names with mapping
       run: |
