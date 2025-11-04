@@ -21,12 +21,32 @@ jobs:
           # 下载远程M3U文件
           curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
           
-          # 转换M3U格式为"频道名称,片源地址"
+          # 转换M3U格式并应用频道名称映射
           awk -F',' '/^#EXTINF:/ { 
               gsub(/^#EXTINF:.*,/, ""); 
               channel_name = $0; 
               getline; 
               if ($0 !~ /^#/) {
+                  # 应用频道名称映射转换
+                  gsub(/CCTV1综合/, "CCTV-1", channel_name);
+                  gsub(/CCTV2财经/, "CCTV-2", channel_name);
+                  gsub(/CCTV3综艺/, "CCTV-3", channel_name);
+                  gsub(/CCTV4中文国际/, "CCTV-4", channel_name);
+                  gsub(/CCTV5体育/, "CCTV-5", channel_name);
+                  gsub(/CCTV5\+体育赛事/, "CCTV-5+", channel_name);
+                  gsub(/CCTV6电影/, "CCTV-6", channel_name);
+                  gsub(/CCTV7国防军事/, "CCTV-7", channel_name);
+                  gsub(/CCTV8电视剧/, "CCTV-8", channel_name);
+                  gsub(/CCTV9纪录/, "CCTV-9", channel_name);
+                  gsub(/CCTV10科教/, "CCTV-10", channel_name);
+                  gsub(/CCTV11戏曲/, "CCTV-11", channel_name);
+                  gsub(/CCTV12社会与法/, "CCTV-12", channel_name);
+                  gsub(/CCTV13新闻/, "CCTV-13", channel_name);
+                  gsub(/CCTV14少儿/, "CCTV-14", channel_name);
+                  gsub(/CCTV15音乐/, "CCTV-15", channel_name);
+                  gsub(/CCTV16奥林匹克/, "CCTV-16", channel_name);
+                  gsub(/CCTV17农业农村/, "CCTV-17", channel_name);
+                  
                   print channel_name "," $0 >> "output/remote.txt"
               }
           }' input.m3u
