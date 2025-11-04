@@ -55,7 +55,7 @@ jobs:
               }
           }' input.m3u
 
-      - name: 合并频道到userresult.txt
+      - name: 智能合并频道到userresult.txt
         run: |
           # 确保userresult.txt文件存在
           touch output/userresult.txt
@@ -73,11 +73,30 @@ jobs:
                   found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
                   
                   if [ -n "$found_line" ]; then
-                      # 找到相同频道，获取行号
+                      # 找到相同频道，获取行号和完整内容
                       line_num=$(echo "$found_line" | cut -d':' -f1)
+                      original_line=$(echo "$found_line" | cut -d':' -f2-)
                       
-                      # 使用sed在目标行之前插入新行
-                      sed -i "${line_num}i\\$line" "output/userresult.txt"
+                      # 检查原频道地址是否以指定域名开头
+                      original_url=$(echo "$original_line" | cut -d',' -f2)
+                      if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
+                          # 删除原频道
+                          sed -i "${line_num}d" "output/userresult.txt"
+                          echo "删除原频道 $channel_name (域名匹配)"
+                      fi
+                      
+                      # 重新查找插入位置（因为可能删除了行）
+                      new_found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
+                      if [ -n "$new_found_line" ]; then
+                          # 找到新的相同频道位置
+                          new_line_num=$(echo "$new_found_line" | cut -d':' -f1)
+                          sed -i "${new_line_num}i\\$line" "output/userresult.txt"
+                          echo "在行号 $new_line_num 前插入频道 $channel_name"
+                      else
+                          # 没有找到相同频道，添加到文件末尾
+                          echo "$line" >> "output/userresult.txt"
+                          echo "添加频道 $channel_name 到文件末尾"
+                      fi
                   else
                       # 没有找到相同频道，不添加
                       echo "频道 $channel_name 未在userresult.txt中找到，跳过添加"
