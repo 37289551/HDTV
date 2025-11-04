@@ -1,0 +1,98 @@
+
+name: Channel List Sync
+
+on:
+  schedule:
+    # 每两小时运行一次，使用UTC时间
+    - cron: '0 */2 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  sync-channels:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Fetch channel list from remote source
+      run: |
+        # 下载远程电视频道列表文件
+        curl -s -o /tmp/remote_channels.txt https://xxx/xxx/interface.txt
+        
+    - name: Process channel names with mapping
+      run: |
+        # 创建频道名称映射函数
+        map_channel_names() {
+          local input_file=$1
+          local output_file=$2
+          
+          # 定义CCTV频道映射规则
+          sed -E '
+            s/CCTV1综合/CCTV-1/g;
+            s/CCTV2财经/CCTV-2/g;
+            s/CCTV3综艺/CCTV-3/g;
+            s/CCTV4中文国际/CCTV-4/g;
+            s/CCTV5体育/CCTV-5/g;
+            s/CCTV5\+体育赛事/CCTV-5+/g;
+            s/CCTV6电影/CCTV-6/g;
+            s/CCTV7国防军事/CCTV-7/g;
+            s/CCTV8电视剧/CCTV-8/g;
+            s/CCTV9纪录/CCTV-9/g;
+            s/CCTV10科教/CCTV-10/g;
+            s/CCTV11戏曲/CCTV-11/g;
+            s/CCTV12社会与法/CCTV-12/g;
+            s/CCTV13新闻/CCTV-13/g;
+            s/CCTV14少儿/CCTV-14/g;
+            s/CCTV15音乐/CCTV-15/g;
+            s/CCTV16奥林匹克/CCTV-16/g;
+            s/CCTV17农业农村/CCTV-17/g;
+            s/CETV1/CETV-1/g;
+            s/CETV2/CETV-2/g;
+            s/CETV4/CETV-4/g;
+            s/CETV5/CETV-5/g
+          ' "$input_file" > "$output_file"
+        }
+        
+        # 应用频道名称映射
+        map_channel_names /tmp/remote_channels.txt /tmp/mapped_channels.txt
+        
+        echo "频道名称映射完成"
+        
+    - name: Process and merge channel lists
+      run: |
+        # 创建output目录（如果不存在）
+        mkdir -p output
+        
+        # 如果本地useroutput.txt不存在，创建空文件
+        if [ ! -f output/useroutput.txt ]; then
+          touch output/useroutput.txt
+        fi
+        
+        # 合并频道列表，去重处理
+        cat output/useroutput.txt /tmp/mapped_channels.txt | sort | uniq > /tmp/merged_channels.txt
+        
+        # 检查是否有新频道需要添加
+        if ! cmp -s output/useroutput.txt /tmp/merged_channels.txt; then
+          echo "检测到新的电视频道，正在更新..."
+          cp /tmp/merged_channels.txt output/useroutput.txt
+        else
+          echo "频道列表已是最新，无需更新"
+        fi
+        
+    - name: Commit and push if changes
+      run: |
+        # 配置git用户信息
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # 检查是否有文件变更
+        if git diff --quiet; then
+          echo "没有检测到文件变更"
+        else
+          git add output/useroutput.txt
+          git commit -m "自动更新电视频道列表（已标准化频道名称）[skip ci]"
+          git push
+        fi
