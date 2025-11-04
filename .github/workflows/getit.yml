@@ -1,4 +1,4 @@
-name: M3U格式转换与同步
+name: Convert and sycn
 
 on:
   schedule:
