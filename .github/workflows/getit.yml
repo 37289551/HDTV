@@ -1,0 +1,40 @@
+
+name: M3U格式转换
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # 每2小时执行一次
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  convert-m3u:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 创建输出目录
+        run: mkdir -p output
+
+      - name: 下载并转换M3U文件
+        run: |
+          # 下载远程M3U文件
+          curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
+          
+          # 转换M3U格式为"频道名称,片源地址"
+          awk -F',' '/^#EXTINF:/ { 
+              gsub(/^#EXTINF:.*,/, ""); 
+              channel_name = $0; 
+              getline; 
+              if ($0 !~ /^#/) {
+                  print channel_name "," $0 >> "output/remote.txt"
+              }
+          }' input.m3u
+
+      - name: 提交转换结果
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add output/remote.txt
+          git diff --staged --quiet || git commit -m "自动更新频道清单 [skip ci]"
+          git push
