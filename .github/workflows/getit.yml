@@ -159,6 +159,8 @@ jobs:
     steps:
       - name: Checkout GitHub Repo
         uses: actions/checkout@v4
+        with:
+          ref: master  # 明确指定分支
 
       - name: Setup retry utility
         run: |
@@ -169,9 +171,9 @@ jobs:
         run: |
           for attempt in {1..3}; do
             echo "Attempt $attempt to download files..."
-            if curl -fsSL -o IPV4.txt "https://raw.githubusercontent.com/jerome158/LIVETV/main/output/userresult.txt" && \
-             curl -fsSL -o IPV6.txt "https://raw.githubusercontent.com/jerome158/LIVETV/main/output/ipv6/result.txt" && \
-             curl -fsSL -o IPV4.m3u "https://raw.githubusercontent.com/jerome158/LIVETV/main/output/userresult.m3u"; then
+            if curl -fsSL -o IPV4.txt "https://raw.githubusercontent.com/jerome158/LIVETV/master/output/userresult.txt" && \
+             curl -fsSL -o IPV6.txt "https://raw.githubusercontent.com/jerome158/LIVETV/master/output/ipv6/result.txt" && \
+             curl -fsSL -o IPV4.m3u "https://raw.githubusercontent.com/jerome158/LIVETV/master/output/userresult.m3u"; then
               echo "Files downloaded successfully"
               break
             else
@@ -266,19 +268,3 @@ jobs:
           else
             echo "No changes to commit"
           fi
-
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const report = `Gitee sync failed for workflow run: ${{ github.run_id }}
-            Repository: ${{ github.repository }}
-            Please check the workflow logs for details.`;
-            
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '🚨 Gitee Sync Failed - ${{ github.workflow }}",
-              body: report
-            });
