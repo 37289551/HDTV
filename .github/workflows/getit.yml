@@ -92,7 +92,7 @@ jobs:
         run: |
           echo "=== Secrets Debug Information ==="
           echo "GITEE_USER: $GITEE_USER"
-          echo "GITEE_TOKEN: $GITEE_TOKEN"
+          echo "GITEE_TOKEN: [MASKED]"
           GITEE_REPO: $GITEE_REPO"
           echo "=== Secrets Debug Information ==="
           
