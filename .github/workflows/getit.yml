@@ -2,7 +2,7 @@ name: Channel Processor
 
 on:
   schedule:
-    - cron: '0 */2 * * *'  # 每两小时执行一次
+   # 每两小时执行一次
   workflow_dispatch:  # 允许手动触发
 
 jobs:
