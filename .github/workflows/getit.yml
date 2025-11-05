@@ -1,6 +1,4 @@
-
-
-name: Channel List Processor
+name: ChannelProcessor
 
 on:
   schedule:
@@ -61,11 +59,11 @@ jobs:
             "CCTV15音乐": "CCTV-15",
             "CCTV16奥林匹克": "CCTV-16",
             "CCTV17农业农村": "CCTV-17",
-	    "CCTV4欧洲":"CCTV欧洲",
-	    "CCTV4美洲":"CCTV美洲",
-	    "CGTN外语纪录":"CGTN英语",
-	    "CETV1":"CETV-1",
-	    "CETV2":"CETV-2",
+            "CCTV4欧洲": "CCTV欧洲",
+            "CCTV4美洲":"CCTV美洲",
+            "CGTN外语纪录":"CGTN英语",
+            "CETV1":"CETV-1",
+            "CETV2":"CETV-2",
         }
         
         current_channel = None
