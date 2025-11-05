@@ -1,33 +1,60 @@
-name: Convert and sycn
+
+name: Convert and Sync M3U
 
 on:
   schedule:
     - cron: '2 */2 * * *'  # 每2小时执行一次
   workflow_dispatch:  # 支持手动触发
+  push:
+    branches: [main, master]
+    paths:
+      - 'output/**'
 
 jobs:
   convert-m3u:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
     steps:
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
 
-      - name: 创建输出目录
+      - name: Create output directory
         run: mkdir -p output
 
-      - name: 清除原有内容
+      - name: Clear existing content
         run: |
           > output/remote.txt
 
-      - name: 下载并转换M3U文件
+      - name: Download and convert M3U file with retry
         run: |
-          curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
-          
-          awk -F',' '/^#EXTINF:/ { 
+          for attempt in {1..3}; do
+            echo "Download attempt $attempt..."
+            if curl -fsSL "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u && [ -s input.m3u ]; then
+              echo "Download successful"
+              break
+            else
+              echo "Download failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "All download attempts failed"
+                exit 1
+              fi
+              sleep 10
+            fi
+          done
+
+      - name: Process M3U file
+        run: |
+          awk -F',' '
+          /^#EXTINF:/ { 
               gsub(/^#EXTINF:.*,/, ""); 
               channel_name = $0; 
               getline; 
               if ($0 !~ /^#/) {
+                  # CCTV频道标准化
                   gsub(/CCTV1综合/, "CCTV-1", channel_name);
                   gsub(/CCTV2财经/, "CCTV-2", channel_name);
                   gsub(/CCTV3综艺/, "CCTV-3", channel_name);
@@ -56,10 +83,22 @@ jobs:
               }
           }' input.m3u
 
-      - name: 智能合并频道到userresult.txt
+      - name: Validate processed file
+        run: |
+          if [ ! -s "output/remote.txt" ]; then
+            echo "Error: Processed file is empty"
+            exit 1
+          fi
+          echo "Processed file contains $(wc -l < output/remote.txt) channels"
+
+      - name: Smart merge channels to userresult.txt
         run: |
           touch output/userresult.txt
           temp_file=$(mktemp)
+          backup_file="output/userresult.txt.backup.$(date +%Y%m%d_%H%M%S)"
+          
+          # 备份原文件
+          cp output/userresult.txt "$backup_file"
           
           while IFS= read -r line; do
               if [ -n "$line" ]; then
@@ -72,73 +111,207 @@ jobs:
                       original_url=$(echo "$original_line" | cut -d',' -f2)
                       if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
                           sed -i "${line_num}d" "output/userresult.txt"
-                          echo "删除原频道 $channel_name (域名匹配)"
+                          echo "Deleted original channel $channel_name (domain matched)"
                       fi
                       
                       new_found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
                       if [ -n "$new_found_line" ]; then
                           new_line_num=$(echo "$new_found_line" | cut -d':' -f1)
                           sed -i "${new_line_num}i\\$line" "output/userresult.txt"
-                          echo "在行号 $new_line_num 前插入频道 $channel_name"
+                          echo "Inserted channel $channel_name before line $new_line_num"
                       else
                           echo "$line" >> "output/userresult.txt"
-                          echo "添加频道 $channel_name 到文件末尾"
+                          echo "Added channel $channel_name to end of file"
                       fi
                   else
-                      echo "频道 $channel_name 未在userresult.txt中找到，跳过添加"
+                      echo "Channel $channel_name not found in userresult.txt, skipping"
                   fi
               fi
           done < "output/remote.txt"
           
+          echo "Merge completed. Backup saved as $backup_file"
           rm -f "$temp_file"
 
-      - name: 提交转换结果
+      - name: Commit conversion results
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add output/remote.txt output/userresult.txt
-          git diff --staged --quiet || git commit -m "自动更新频道清单 [skip ci]"
-          git push
+          
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto update channel list [skip ci] - $(date +'%Y-%m-%d %H:%M:%S')"
+            for push_attempt in {1..3}; do
+              if git push; then
+                echo "Push successful"
+                break
+              else
+                echo "Push failed on attempt $push_attempt"
+                if [ $push_attempt -eq 3 ]; then
+                  echo "All push attempts failed"
+                  exit 1
+                fi
+                sleep 10
+              fi
+            done
+          else
+            echo "No changes to commit"
+          fi
 
   sync-to-gitee:
     runs-on: ubuntu-latest
     needs: convert-m3u
+    timeout-minutes: 20
+    if: always()  # 即使convert-m3u失败也执行
+    
     steps:
       - name: Checkout GitHub Repo
         uses: actions/checkout@v4
+        with:
+          ref: main
 
-      - name: Download File from GitHub
+      - name: Setup retry utility
         run: |
-          curl -o IPV4.txt https://raw.githubusercontent.com/jerome158/LIVETV/master/output/userresult.txt
-          curl -o IPV6.txt https://raw.githubusercontent.com/jerome158/LIVETV/master/output/ipv6/result.txt
-          curl -o IPV4.m3u https://raw.githubusercontent.com/jerome158/LIVETV/master/output/userresult.m3u
+          sudo apt-get update
+          sudo apt-get install -y curl
 
-      - name: Clone Gitee Repo
+      - name: Download Files from GitHub with Retry
+        run: |
+          for attempt in {1..3}; do
+            echo "Attempt $attempt to download files..."
+            if curl -fsSL -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/main/output/userresult.txt" && \
+             curl -fsSL -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/main/output/ipv6/result.txt" && \
+             curl -fsSL -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/main/output/userresult.m3u"; then
+              echo "Files downloaded successfully"
+              break
+            else
+              echo "Download failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "All download attempts failed"
+                # 继续执行，尝试使用现有文件
+              fi
+              sleep 10
+            fi
+          done
+
+      - name: Validate downloaded files
+        run: |
+          files_found=0
+          for file in IPV4.txt IPV6.txt IPV4.m3u; do
+            if [ -f "$file" ] && [ -s "$file" ]; then
+              echo "✓ $file: $(wc -l < "$file") lines"
+              files_found=$((files_found + 1))
+            else
+              echo "✗ $file: missing or empty"
+            fi
+          done
+          
+          if [ $files_found -eq 0 ]; then
+            echo "Error: No valid files downloaded"
+            exit 1
+          fi
+
+      - name: Clone Gitee Repo with Retry
         env:
           GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
         run: |
-          for i in {1..3}; do
-            git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${{ secrets.GITEE_REPO }}.git" && break || sleep 10
+          for attempt in {1..3}; do
+            echo "Attempt $attempt to clone Gitee repo..."
+            if git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo; then
+              echo "Gitee repo cloned successfully"
+              break
+            else
+              echo "Clone failed on attempt $attempt"
+              if [ $attempt -eq 3 ]; then
+                echo "All clone attempts failed"
+                exit 1
+              fi
+              sleep 15
+            fi
           done
-          cd ${{ secrets.GITEE_REPO }}
 
-      - name: Copy File & Push to Gitee
+      - name: Configure Git and Sync Files
         env:
           GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
         run: |
-          cd ${{ secrets.GITEE_REPO }}
-          git config user.name "Auto Sync"
-          git config user.email "auto-sync@users.noreply.github.com"
-          cp ../IPV4.txt ./IPV4.txt
-          cp ../IPV6.txt ./IPV6.txt
-          cp ../IPV4.m3u ./IPV4.m3u
+          cd gitee-repo
+          
+          # Configure Git
+          git config user.name "GitHub Actions Sync"
+          git config user.email "actions@users.noreply.github.com"
+          
+          # Ensure working on correct branch
+          git checkout main || git checkout -b main
+          
+          # Create backup
+          timestamp=$(date +%Y%m%d_%H%M%S)"
+          mkdir -p backup
+          cp IPV4.txt backup/IPV4.txt.$timestamp 2>/dev/null || true
+          cp IPV6.txt backup/IPV6.txt.$timestamp 2>/dev/null || true
+          cp IPV4.m3u backup/IPV4.m3u.$timestamp 2>/dev/null || true
+          
+          # Copy new files
+          cp ../IPV4.txt ./
+          cp ../IPV6.txt ./
+          cp ../IPV4.m3u ./
+          
+          # Check file differences
+          echo "File changes detected:"
+          git status --short || echo "No git status available"
+          
+          # Commit and push
           git add IPV4.txt IPV6.txt IPV4.m3u
+          
           if ! git diff --cached --quiet; then
-            git commit -m "Sync file from GitHub $(date)"
-            git push -f origin master
+            git commit -m "Auto sync from GitHub - $(date +'%Y-%m-%d %H:%M:%S')"
+            
+            # Push with retry logic
+            for push_attempt in {1..3}; do
+              echo "Push attempt $push_attempt..."
+              if git pull --rebase origin main && git push origin main; then
+                echo "✓ Push successful"
+                break
+              else
+                echo "Push failed on attempt $push_attempt"
+                if [ $push_attempt -eq 3 ]; then
+                  echo "Forcing push after all attempts failed"
+                  git push -f origin main
+                fi
+                sleep 10
+              fi
+            done
           else
             echo "No changes to commit"
           fi
+
+      - name: Create sync report
+        if: always()
+        run: |
+          {
+            echo "=== Sync Report ==="
+            echo "Timestamp: $(date)"
+            echo "Repository: ${{ secrets.GITEE_USER }}/${{ secrets.GITEE_REPO }}"
+            echo "Status: ${{ job.status }}"
+            echo "Workflow: ${{ github.workflow }}"
+            echo "Run ID: ${{ github.run_id }}"
+            echo "=================="
+          } > sync_report.txt
+          cat sync_report.txt
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const report = `Gitee sync failed for workflow run: ${{ github.run_id }}
+            Repository: ${{ github.repository }}
+            Please check the workflow logs for details.`;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Gitee Sync Failed - ${{ github.workflow }}",
+              body: report
+            });
