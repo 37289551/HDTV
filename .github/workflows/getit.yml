@@ -1,4 +1,4 @@
-name: ChannelProcessor
+name: convert-m3u
 
 on:
   schedule:
@@ -149,7 +149,6 @@ jobs:
           
   sync-to-gitee:
     runs-on: ubuntu-latest
-    needs: convert-m3u
     
     steps:
       - name: Checkout GitHub Repo
