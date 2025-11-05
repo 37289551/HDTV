@@ -84,37 +84,6 @@ jobs:
         with:
           ref: master
        
-      - name: Debug Secrets Safely
-        env:
-          GITEE_USER: ${{ secrets.GITEE_USER }}
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-          GITEE_REPO: ${{ secrets.GITEE_REPO }}
-        run: |
-          echo "=== Secrets Debug Information ==="
-          echo "GITEE_USER: $GITEE_USER"
-          echo "GITEE_TOKEN: [MASKED - LENGTH: ${#GITEE_TOKEN}]"
-          echo "GITEE_REPO: $GITEE_REPO"
-          echo "=== Secrets Debug Information ==="
-          
-          # 验证secrets是否配置
-          if [ -z "$GITEE_USER" ]; then
-            echo "ERROR: GITEE_USER is empty"
-          else
-            echo "SUCCESS: GITEE_USER is configured"
-          fi
-          
-          if [ -z "$GITEE_TOKEN" ]; then
-            echo "ERROR: GITEE_TOKEN is empty"
-          else
-            echo "SUCCESS: GITEE_TOKEN is configured"
-          fi
-          
-          if [ -z "$GITEE_REPO" ]; then
-            echo "ERROR: GITEE_REPO is empty"
-          else
-            echo "SUCCESS: GITEE_REPO is configured"
-          fi
-
       - name: Download files
         run: |
           curl -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
