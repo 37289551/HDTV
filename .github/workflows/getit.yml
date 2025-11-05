@@ -1,4 +1,4 @@
-name: convert-m3u
+name: Channel Processor
 
 on:
   schedule:
@@ -8,23 +8,26 @@ on:
 jobs:
   process-channels:
     runs-on: ubuntu-latest
+    name: 🎬 Process Channel Lists
     
     steps:
-    - name: Checkout repository
+    - name: 📥 Checkout repository
       uses: actions/checkout@v4
       with:
         ref: master
+        fetch-depth: 0
 
-    - name: Setup Python
+    - name: 🐍 Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.10"
 
-    - name: Install dependencies
+    - name: 📦 Install dependencies
       run: pip install requests
 
-    - name: Download and process m3u file
+    - name: ⬇️ Download and process m3u file
       run: |
+        echo "开始下载和处理M3U文件..."
         mkdir -p output
         python << 'EOF'
         import requests
@@ -32,6 +35,7 @@ jobs:
         
         # 下载远程m3u文件
         url = "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt"
+        print(f"正在从 {url} 下载文件...")
         response = requests.get(url)
         m3u_content = response.text
         
@@ -58,12 +62,7 @@ jobs:
             "CCTV14少儿": "CCTV-14",
             "CCTV15音乐": "CCTV-15",
             "CCTV16奥林匹克": "CCTV-16",
-            "CCTV17农业农村": "CCTV-17",
-            "CCTV4欧洲": "CCTV欧洲",
-            "CCTV4美洲":"CCTV美洲",
-            "CGTN外语纪录":"CGTN英语",
-            "CETV1":"CETV-1",
-            "CETV2":"CETV-2",
+            "CCTV17农业农村": "CCTV-17"
         }
         
         current_channel = None
@@ -83,14 +82,17 @@ jobs:
                     output_lines.append(f"{current_channel}, {line}")
                     current_channel = None
         
-        # 清空原文件内容并写入新内容
+        # 写入处理后的内容
         with open('output/remote.txt', 'w', encoding='utf-8') as f:
             f.write('\n'.join(output_lines))
         
-        print(f"成功处理 {len(output_lines)} 个频道")
+        print(f"✅ 成功处理 {len(output_lines)} 个频道")
+        print("处理的频道示例:")
+        for i, channel in enumerate(output_lines[:5]):
+            print(f"  {i+1}. {channel.split(',')[0]}")
         EOF
 
-    - name: Merge channels to user result
+    - name: 🔄 Merge channels to user result
       run: |
         python << 'EOF'
         import os
@@ -98,87 +100,281 @@ jobs:
         def read_channels(filename):
             """读取频道文件，返回频道字典"""
             if not os.path.exists(filename):
+                print(f"⚠️ 文件 {filename} 不存在")
                 return {}
             
             channels = {}
             with open(filename, 'r', encoding='utf-8') as f:
-                for line in f:
+                for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if line and ',' in line:
-                        name, url = line.split(',', 1)
-                        channels[name.strip()] = url.strip()
+                        try:
+                            name, url = line.split(',', 1)
+                            channels[name.strip()] = url.strip()
+                        except Exception as e:
+                            print(f"⚠️ 第 {line_num} 行解析失败: {e}")
             return channels
         
-        def write_channels(filename, channels):
+        def write_channels(filename, channels_dict):
             """将频道字典写入文件"""
             with open(filename, 'w', encoding='utf-8') as f:
-                for name, url in channels.items():
+                for name, url in channels_dict.items():
                     f.write(f"{name}, {url}\n")
+        
+        print("开始合并频道列表...")
         
         # 读取remote.txt和userresult.txt
         remote_channels = read_channels('output/remote.txt')
         user_channels = read_channels('output/userresult.txt')
         
-        # 处理频道合并
+        print(f"📊 统计信息:")
+        print(f"  - 远程频道数: {len(remote_channels)}")
+        print(f"  - 用户原有频道数: {len(user_channels)}")
+        
+        # 修复：保留所有原有频道，只更新匹配的频道
+        merged_channels = user_channels.copy()  # 保留所有原有频道
+        
+        update_count = 0
+        add_count = 0
+        
         for remote_name, remote_url in remote_channels.items():
-            if remote_name in user_channels:
-                # 检查现有频道地址是否以特定前缀开头
-                existing_url = user_channels[remote_name]
+            if remote_name in merged_channels:
+                # 检查是否需要更新
+                existing_url = merged_channels[remote_name]
                 if existing_url.startswith('http://gslbmgsplive.miguvideo.com'):
-                    # 替换频道
-                    user_channels[remote_name] = remote_url
-                    print(f"替换频道: {remote_name}")
+                    merged_channels[remote_name] = remote_url
+                    update_count += 1
+                    print(f"🔄 更新频道: {remote_name}")
                 else:
-                    # 添加到前面（这里实现为保持原有顺序，但标记已处理）
-                    user_channels[remote_name] = remote_url
-                    print(f"更新频道: {remote_name}")
-            # 如果目标文件不存在相同频道，则不添加
+                    # 保持原有频道不变
+                    print(f"📝 保留原有频道: {remote_name}")
+            else:
+                # 如果用户文件中没有该频道，可以选择添加（这里选择不添加以保持原有结构）
+                # 如需要添加，取消下面注释：
+                # merged_channels[remote_name] = remote_url
+                # add_count += 1
+                # print(f"➕ 添加新频道: {remote_name}")
+                pass
         
         # 写入合并后的结果
-        write_channels('output/userresult.txt', user_channels)
-        print(f"合并完成，共处理 {len(user_channels)} 个频道")
+        write_channels('output/userresult.txt', merged_channels)
+        
+        print(f"🎉 合并完成!")
+        print(f"📈 最终统计:")
+        print(f"  - 总频道数: {len(merged_channels)}")
+        print(f"  - 更新频道数: {update_count}")
+        print(f"  - 添加频道数: {add_count}")
+        print(f"  - 保留原有频道数: {len(merged_channels) - add_count}")
         EOF
 
-    - name: Commit and push changes
+    - name: 💾 Commit and push changes
       run: |
+        echo "检查文件变更..."
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add output/
-        git diff --staged --quiet || git commit -m "Auto-update: Process channel lists $(date +'%Y-%m-%d %H:%M:%S')"
-        git push origin master
+        
+        # 检查是否有变更需要提交
+        if git diff --staged --quiet; then
+          echo "📭 没有检测到文件变更，跳过提交"
+        else
+          echo "正在提交变更..."
+          git commit -m "Auto-update: Process channel lists $(date +'%Y-%m-%d %H:%M:%S')"
+          git push origin master
+          echo "✅ 变更已成功推送到仓库"
+        fi
+
           
+Sync to Gitee
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
   sync-to-gitee:
     runs-on: ubuntu-latest
+    name: 🚀 GitHub to Gitee Sync
     
     steps:
-      - name: Checkout GitHub Repo
+      # 步骤1: 检出GitHub仓库代码
+      - name: 📥 Checkout GitHub Repository
         uses: actions/checkout@v4
         with:
           ref: master
-       
-      - name: Download files
+          fetch-depth: 0  # 获取完整历史记录
+        
+      # 步骤2: 下载需要同步的文件
+      - name: ⬇️ Download Source Files
         run: |
-          curl -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
-          curl -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
-          curl -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
-
-      - name: Clone Gitee Repo
+          echo "开始下载需要同步的文件..."
+          
+          # 下载IPv4文本文件
+          echo "正在下载 IPV4.txt..."
+          curl -f -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
+          if [ $? -eq 0 ]; then
+            echo "✅ IPV4.txt 下载成功"
+            ls -la IPV4.txt
+          else
+            echo "❌ IPV4.txt 下载失败"
+            exit 1
+          fi
+          
+          # 下载IPv6文本文件
+          echo "正在下载 IPV6.txt..."
+          curl -f -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
+          if [ $? -eq 0 ]; then
+            echo "✅ IPV6.txt 下载成功"
+            ls -la IPV6.txt
+          else
+            echo "❌ IPV6.txt 下载失败"
+            exit 1
+          fi
+          
+          # 下载IPv4播放列表文件
+          echo "正在下载 IPV4.m3u..."
+          curl -f -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
+          if [ $? -eq 0 ]; then
+            echo "✅ IPV4.m3u 下载成功"
+            ls -la IPV4.m3u
+          else
+            echo "❌ IPV4.m3u 下载失败"
+            exit 1
+          fi
+          
+          echo "🎉 所有文件下载完成！"
+          echo "下载的文件列表："
+          ls -la *.txt *.m3u
+        
+      # 步骤3: 克隆Gitee目标仓库
+      - name: 🎯 Clone Gitee Repository
         env:
           GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
         run: |
+          echo "开始克隆Gitee仓库..."
+          echo "仓库地址: gitee.com/${GITEE_USER}/${GITEE_REPO}"
+          
+          # 检查必要的密钥是否存在
+          if [ -z "$GITEE_USER" ] || [ -z "$GITEE_TOKEN" ] || [ -z "$GITEE_REPO" ]; then
+            echo "❌ 缺少必要的Gitee配置密钥，请检查以下密钥是否设置："
+            echo "   - GITEE_USER: ${GITEE_USER:+-}"
+            echo "   - GITEE_TOKEN: ${GITEE_TOKEN:+-}"
+            echo "   - GITEE_REPO: ${GITEE_REPO:+-}"
+            exit 1
+          fi
+          
+          # 克隆仓库
           git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo
-
-      - name: Sync files
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Gitee仓库克隆成功"
+            echo "仓库内容："
+            ls -la gitee-repo/
+          else
+            echo "❌ Gitee仓库克隆失败"
+            exit 1
+          fi
+        
+      # 步骤4: 同步文件到Gitee仓库
+      - name: 🔄 Sync Files to Gitee
         run: |
+          echo "开始同步文件到Gitee仓库..."
           cd gitee-repo
-          git config user.name "GitHub Actions"
+          
+          # 配置Git用户信息
+          echo "配置Git用户信息..."
+          git config user.name "GitHub Actions Bot"
           git config user.email "actions@users.noreply.github.com"
+          
+          # 切换到master分支，如果不存在则创建
+          echo "检查分支状态..."
           git checkout master || git checkout -b master
+          echo "✅ 已切换到master分支"
+          
+          # 备份原有文件（如果存在）
+          echo "备份原有文件..."
+          for file in IPV4.txt IPV6.txt IPV4.m3u; do
+            if [ -f "$file" ]; then
+              cp "$file" "${file}.backup"
+              echo "📦 已备份 $file"
+            fi
+          done
+          
+          # 复制新文件
+          echo "复制新文件..."
           cp ../IPV4.txt ./
           cp ../IPV6.txt ./
           cp ../IPV4.m3u ./
+          
+          echo "✅ 文件复制完成"
+          echo "同步的文件列表："
+          ls -la IPV4.txt IPV6.txt IPV4.m3u
+          
+          # 检查文件是否有变化
+          echo "检查文件变更..."
+          git status
+          
+          # 添加文件到暂存区
+          echo "添加文件到Git..."
           git add IPV4.txt IPV6.txt IPV4.m3u
-          git commit -m "Sync from GitHub" || exit 0
-          git push origin master
+          
+          # 提交变更
+          echo "提交变更..."
+          if git diff-index --quiet HEAD --; then
+            echo "📝 没有检测到文件变更，跳过提交"
+          else
+            git commit -m "🔄 Auto Sync from GitHub - $(date '+%Y-%m-%d %H:%M:%S')
+            if [ $? -eq 0 ]; then
+              echo "✅ 变更提交成功"
+              echo "提交信息："
+              git log -1 --oneline
+            else
+              echo "❌ 变更提交失败"
+              exit 1
+            fi
+          fi
+        
+      # 步骤5: 推送变更到Gitee
+      - name: 🚀 Push to Gitee
+        run: |
+          echo "开始推送变更到Gitee..."
+          cd gitee-repo
+          
+          # 检查是否有需要推送的提交
+          LOCAL=$(git rev-parse @)
+          REMOTE=$(git rev-parse @{u})
+          BASE=$(git merge-base @ @{u})
+          
+          if [ $LOCAL = $REMOTE ]; then
+            echo "📭 本地和远程分支一致，无需推送"
+          elif [ $LOCAL = $BASE ]; then
+            echo "🔄 需要拉取远程更新"
+          elif [ $REMOTE = $BASE ]; then
+            echo "正在推送变更..."
+            git push origin master
+            if [ $? -eq 0 ]; then
+              echo "🎉 同步完成！文件已成功推送到Gitee"
+              echo "📊 同步统计："
+              echo "   - IPV4.txt: $(stat -c%s IPV4.txt) bytes"
+              echo "   - IPV6.txt: $(stat -c%s IPV6.txt) bytes"
+              echo "   - IPV4.m3u: $(stat -c%s IPV4.m3u) bytes"
+            else
+              echo "❌ 推送失败"
+              exit 1
+            fi
+          else
+            echo "⚠️  分支出现分歧，需要手动处理"
+            exit 1
+          fi
+        
+      # 步骤6: 清理工作
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          echo "执行清理工作..."
+          rm -rf gitee-repo
+          rm -f IPV4.txt IPV6.txt IPV4.m3u
+          echo "✅ 清理完成"
