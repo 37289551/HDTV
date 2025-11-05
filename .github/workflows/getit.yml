@@ -186,186 +186,36 @@ jobs:
 
   sync-to-gitee:
     runs-on: ubuntu-latest
-    name: 🚀 GitHub to Gitee Sync
     
     steps:
-      # 步骤1: 检出GitHub仓库代码
-      - name: 📥 Checkout GitHub Repository
+      - name: Checkout GitHub Repo
         uses: actions/checkout@v4
         with:
           ref: master
-          fetch-depth: 0  # 获取完整历史记录
-        
-      # 步骤2: 下载需要同步的文件
-      - name: ⬇️ Download Source Files
+       
+      - name: Download files
         run: |
-          echo "开始下载需要同步的文件..."
-          
-          # 下载IPv4文本文件
-          echo "正在下载 IPV4.txt..."
-          curl -f -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
-          if [ $? -eq 0 ]; then
-            echo "✅ IPV4.txt 下载成功"
-            ls -la IPV4.txt
-          else
-            echo "❌ IPV4.txt 下载失败"
-            exit 1
-          fi
-          
-          # 下载IPv6文本文件
-          echo "正在下载 IPV6.txt..."
-          curl -f -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
-          if [ $? -eq 0 ]; then
-            echo "✅ IPV6.txt 下载成功"
-            ls -la IPV6.txt
-          else
-            echo "❌ IPV6.txt 下载失败"
-            exit 1
-          fi
-          
-          # 下载IPv4播放列表文件
-          echo "正在下载 IPV4.m3u..."
-          curl -f -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
-          if [ $? -eq 0 ]; then
-            echo "✅ IPV4.m3u 下载成功"
-            ls -la IPV4.m3u
-          else
-            echo "❌ IPV4.m3u 下载失败"
-            exit 1
-          fi
-          
-          echo "🎉 所有文件下载完成！"
-          echo "下载的文件列表："
-          ls -la *.txt *.m3u
-        
-      # 步骤3: 克隆Gitee目标仓库
-      - name: 🎯 Clone Gitee Repository
+          curl -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
+          curl -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
+          curl -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
+
+      - name: Clone Gitee Repo
         env:
           GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
         run: |
-          echo "开始克隆Gitee仓库..."
-          echo "仓库地址: gitee.com/${GITEE_USER}/${GITEE_REPO}"
-          
-          # 检查必要的密钥是否存在
-          if [ -z "$GITEE_USER" ] || [ -z "$GITEE_TOKEN" ] || [ -z "$GITEE_REPO" ]; then
-            echo "❌ 缺少必要的Gitee配置密钥，请检查以下密钥是否设置："
-            echo "   - GITEE_USER: ${GITEE_USER:+-}"
-            echo "   - GITEE_TOKEN: ${GITEE_TOKEN:+-}"
-            echo "   - GITEE_REPO: ${GITEE_REPO:+-}"
-            exit 1
-          fi
-          
-          # 克隆仓库
           git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo
-          
-          if [ $? -eq 0 ]; then
-            echo "✅ Gitee仓库克隆成功"
-            echo "仓库内容："
-            ls -la gitee-repo/
-          else
-            echo "❌ Gitee仓库克隆失败"
-            exit 1
-          fi
-        
-      # 步骤4: 同步文件到Gitee仓库
-      - name: 🔄 Sync Files to Gitee
+
+      - name: Sync files
         run: |
-          echo "开始同步文件到Gitee仓库..."
           cd gitee-repo
-          
-          # 配置Git用户信息
-          echo "配置Git用户信息..."
-          git config user.name "GitHub Actions Bot"
+          git config user.name "GitHub Actions"
           git config user.email "actions@users.noreply.github.com"
-          
-          # 切换到master分支，如果不存在则创建
-          echo "检查分支状态..."
           git checkout master || git checkout -b master
-          echo "✅ 已切换到master分支"
-          
-          # 备份原有文件（如果存在）
-          echo "备份原有文件..."
-          for file in IPV4.txt IPV6.txt IPV4.m3u; do
-            if [ -f "$file" ]; then
-              cp "$file" "${file}.backup"
-              echo "📦 已备份 $file"
-            fi
-          done
-          
-          # 复制新文件
-          echo "复制新文件..."
           cp ../IPV4.txt ./
           cp ../IPV6.txt ./
           cp ../IPV4.m3u ./
-          
-          echo "✅ 文件复制完成"
-          echo "同步的文件列表："
-          ls -la IPV4.txt IPV6.txt IPV4.m3u
-          
-          # 检查文件是否有变化
-          echo "检查文件变更..."
-          git status
-          
-          # 添加文件到暂存区
-          echo "添加文件到Git..."
           git add IPV4.txt IPV6.txt IPV4.m3u
-          
-          # 提交变更
-          echo "提交变更..."
-          if git diff-index --quiet HEAD --; then
-            echo "📝 没有检测到文件变更，跳过提交"
-          else
-            git commit -m "🔄 Auto Sync from GitHub - $(date '+%Y-%m-%d %H:%M:%S')
-            if [ $? -eq 0 ]; then
-              echo "✅ 变更提交成功"
-              echo "提交信息："
-              git log -1 --oneline
-            else
-              echo "❌ 变更提交失败"
-              exit 1
-            fi
-          fi
-        
-      # 步骤5: 推送变更到Gitee
-      - name: 🚀 Push to Gitee
-        run: |
-          echo "开始推送变更到Gitee..."
-          cd gitee-repo
-          
-          # 检查是否有需要推送的提交
-          LOCAL=$(git rev-parse @)
-          REMOTE=$(git rev-parse @{u})
-          BASE=$(git merge-base @ @{u})
-          
-          if [ $LOCAL = $REMOTE ]; then
-            echo "📭 本地和远程分支一致，无需推送"
-          elif [ $LOCAL = $BASE ]; then
-            echo "🔄 需要拉取远程更新"
-          elif [ $REMOTE = $BASE ]; then
-            echo "正在推送变更..."
-            git push origin master
-            if [ $? -eq 0 ]; then
-              echo "🎉 同步完成！文件已成功推送到Gitee"
-              echo "📊 同步统计："
-              echo "   - IPV4.txt: $(stat -c%s IPV4.txt) bytes"
-              echo "   - IPV6.txt: $(stat -c%s IPV6.txt) bytes"
-              echo "   - IPV4.m3u: $(stat -c%s IPV4.m3u) bytes"
-            else
-              echo "❌ 推送失败"
-              exit 1
-            fi
-          else
-            echo "⚠️  分支出现分歧，需要手动处理"
-            exit 1
-          fi
-        
-      # 步骤6: 清理工作
-      - name: 🧹 Cleanup
-        if: always()
-        run: |
-          echo "执行清理工作..."
-          rm -rf gitee-repo
-          rm -f IPV4.txt IPV6.txt IPV4.m3u
-          echo "✅ 清理完成"
+          git commit -m "Sync from GitHub" || exit 0
+          git push origin master
