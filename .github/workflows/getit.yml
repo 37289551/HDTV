@@ -5,10 +5,6 @@ on:
   schedule:
     - cron: '2 */2 * * *'  # 每2小时执行一次
   workflow_dispatch:  # 支持手动触发
-  push:
-    branches: [main, master]
-    paths:
-      - 'output/**'
 
 jobs:
   convert-m3u:
@@ -18,10 +14,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main
-
+      
       - name: Create output directory
         run: mkdir -p output
 
@@ -160,14 +153,12 @@ jobs:
   sync-to-gitee:
     runs-on: ubuntu-latest
     needs: convert-m3u
-    timeout-minutes: 20
+    timeout-minutes: 5
     if: always()  # 即使convert-m3u失败也执行
     
     steps:
       - name: Checkout GitHub Repo
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Setup retry utility
         run: |
@@ -242,16 +233,6 @@ jobs:
           git config user.name "GitHub Actions Sync"
           git config user.email "actions@users.noreply.github.com"
           
-          # Ensure working on correct branch
-          git checkout main || git checkout -b main
-          
-          # Create backup
-          timestamp=$(date +%Y%m%d_%H%M%S)"
-          mkdir -p backup
-          cp IPV4.txt backup/IPV4.txt.$timestamp 2>/dev/null || true
-          cp IPV6.txt backup/IPV6.txt.$timestamp 2>/dev/null || true
-          cp IPV4.m3u backup/IPV4.m3u.$timestamp 2>/dev/null || true
-          
           # Copy new files
           cp ../IPV4.txt ./
           cp ../IPV6.txt ./
@@ -285,20 +266,6 @@ jobs:
           else
             echo "No changes to commit"
           fi
-
-      - name: Create sync report
-        if: always()
-        run: |
-          {
-            echo "=== Sync Report ==="
-            echo "Timestamp: $(date)"
-            echo "Repository: ${{ secrets.GITEE_USER }}/${{ secrets.GITEE_REPO }}"
-            echo "Status: ${{ job.status }}"
-            echo "Workflow: ${{ github.workflow }}"
-            echo "Run ID: ${{ github.run_id }}"
-            echo "=================="
-          } > sync_report.txt
-          cat sync_report.txt
 
       - name: Notify on failure
         if: failure()
