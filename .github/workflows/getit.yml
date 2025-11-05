@@ -84,7 +84,7 @@ jobs:
         with:
           ref: master
        
-      - name: Debug Secrets
+      - name: Debug Secrets Safely
         env:
           GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
@@ -92,27 +92,27 @@ jobs:
         run: |
           echo "=== Secrets Debug Information ==="
           echo "GITEE_USER: $GITEE_USER"
-          echo "GITEE_TOKEN: [MASKED]"
-          GITEE_REPO: $GITEE_REPO"
+          echo "GITEE_TOKEN: [MASKED - LENGTH: ${#GITEE_TOKEN}]"
+          echo "GITEE_REPO: $GITEE_REPO"
           echo "=== Secrets Debug Information ==="
           
-          # 验证 secrets 是否为空
+          # 验证secrets是否配置
           if [ -z "$GITEE_USER" ]; then
-            echo "❌ GITEE_USER is empty"
+            echo "ERROR: GITEE_USER is empty"
           else
-            echo "✅ GITEE_USER is set"
+            echo "SUCCESS: GITEE_USER is configured"
           fi
           
           if [ -z "$GITEE_TOKEN" ]; then
-            echo "❌ GITEE_TOKEN is empty"
+            echo "ERROR: GITEE_TOKEN is empty"
           else
-            echo "✅ GITEE_TOKEN is set"
+            echo "SUCCESS: GITEE_TOKEN is configured"
           fi
           
           if [ -z "$GITEE_REPO" ]; then
-            echo "❌ GITEE_REPO is empty"
+            echo "ERROR: GITEE_REPO is empty"
           else
-            echo "✅ GITEE_REPO is set"
+            echo "SUCCESS: GITEE_REPO is configured"
           fi
 
       - name: Download files
