@@ -3,18 +3,23 @@ name: Convert and Sync M3U
 
 on:
   schedule:
-    - cron: '2 */2 * * *'  # 每2小时执行一次
-  workflow_dispatch:  # 支持手动触发
+    - cron: '2 */2 * * *'
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'output/**'
 
 jobs:
   convert-m3u:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+        with:
+          ref: master
+
       - name: Create output directory
         run: mkdir -p output
 
@@ -22,22 +27,9 @@ jobs:
         run: |
           > output/remote.txt
 
-      - name: Download and convert M3U file with retry
+      - name: Download M3U file
         run: |
-          for attempt in {1..3}; do
-            echo "Download attempt $attempt..."
-            if curl -fsSL "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u && [ -s input.m3u ]; then
-              echo "Download successful"
-              break
-            else
-              echo "Download failed on attempt $attempt"
-              if [ $attempt -eq 3 ]; then
-                echo "All download attempts failed"
-                exit 1
-              fi
-              sleep 10
-            fi
-          done
+          curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
 
       - name: Process M3U file
         run: |
@@ -47,7 +39,6 @@ jobs:
               channel_name = $0; 
               getline; 
               if ($0 !~ /^#/) {
-                  # CCTV频道标准化
                   gsub(/CCTV1综合/, "CCTV-1", channel_name);
                   gsub(/CCTV2财经/, "CCTV-2", channel_name);
                   gsub(/CCTV3综艺/, "CCTV-3", channel_name);
@@ -70,201 +61,52 @@ jobs:
                   gsub(/CCTV4美洲/, "CCTV美洲", channel_name);
                   gsub(/CGTN外语纪录/, "CGTN英语", channel_name);
                   gsub(/CETV1/, "CETV-1", channel_name);
-                  gsub(/CETV2/, "CETV-2", channel_name);
                   
                   print channel_name "," $0 >> "output/remote.txt"
               }
           }' input.m3u
 
-      - name: Validate processed file
+      - name: Commit changes
         run: |
-          if [ ! -s "output/remote.txt" ]; then
-            echo "Error: Processed file is empty"
-            exit 1
-          fi
-          echo "Processed file contains $(wc -l < output/remote.txt) channels"
-
-      - name: Smart merge channels to userresult.txt
-        run: |
-          touch output/userresult.txt
-          temp_file=$(mktemp)
-          backup_file="output/userresult.txt.backup.$(date +%Y%m%d_%H%M%S)"
-          
-          # 备份原文件
-          cp output/userresult.txt "$backup_file"
-          
-          while IFS= read -r line; do
-              if [ -n "$line" ]; then
-                  channel_name=$(echo "$line" | cut -d',' -f1)
-                  found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
-                  
-                  if [ -n "$found_line" ]; then
-                      line_num=$(echo "$found_line" | cut -d':' -f1)
-                      original_line=$(echo "$found_line" | cut -d':' -f2-)
-                      original_url=$(echo "$original_line" | cut -d',' -f2)
-                      if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          sed -i "${line_num}d" "output/userresult.txt"
-                          echo "Deleted original channel $channel_name (domain matched)"
-                      fi
-                      
-                      new_found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
-                      if [ -n "$new_found_line" ]; then
-                          new_line_num=$(echo "$new_found_line" | cut -d':' -f1)
-                          sed -i "${new_line_num}i\\$line" "output/userresult.txt"
-                          echo "Inserted channel $channel_name before line $new_line_num"
-                      else
-                          echo "$line" >> "output/userresult.txt"
-                          echo "Added channel $channel_name to end of file"
-                      fi
-                  else
-                      echo "Channel $channel_name not found in userresult.txt, skipping"
-                  fi
-              fi
-          done < "output/remote.txt"
-          
-          echo "Merge completed. Backup saved as $backup_file"
-          rm -f "$temp_file"
-
-      - name: Commit conversion results
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add output/remote.txt output/userresult.txt
-          
-          if ! git diff --staged --quiet; then
-            git commit -m "Auto update channel list [skip ci] - $(date +'%Y-%m-%d %H:%M:%S')"
-            for push_attempt in {1..3}; do
-              if git push; then
-                echo "Push successful"
-                break
-              else
-                echo "Push failed on attempt $push_attempt"
-                if [ $push_attempt -eq 3 ]; then
-                  echo "All push attempts failed"
-                  exit 1
-                fi
-                sleep 10
-              fi
-            done
-          else
-            echo "No changes to commit"
-          fi
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add output/remote.txt
+          git commit -m "Update channel list" || exit 0
+          git push origin master
 
   sync-to-gitee:
     runs-on: ubuntu-latest
     needs: convert-m3u
-    timeout-minutes: 5
-    if: always()  # 即使convert-m3u失败也执行
     
     steps:
       - name: Checkout GitHub Repo
         uses: actions/checkout@v4
         with:
-          ref: master  # 明确指定分支
+          ref: master
 
-      - name: Setup retry utility
+      - name: Download files
         run: |
-          sudo apt-get update
-          sudo apt-get install -y curl
+          curl -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
+          curl -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
+          curl -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
 
-      - name: Download Files from GitHub with Retry
-        run: |
-          for attempt in {1..3}; do
-            echo "Attempt $attempt to download files..."
-            if curl -fsSL -o IPV4.txt "https://raw.githubusercontent.com/jerome158/LIVETV/master/output/userresult.txt" && \
-             curl -fsSL -o IPV6.txt "https://raw.githubusercontent.com/jerome158/LIVETV/master/output/ipv6/result.txt" && \
-             curl -fsSL -o IPV4.m3u "https://raw.githubusercontent.com/jerome158/LIVETV/master/output/userresult.m3u"; then
-              echo "Files downloaded successfully"
-              break
-            else
-              echo "Download failed on attempt $attempt"
-              if [ $attempt -eq 3 ]; then
-                echo "All download attempts failed"
-                # 继续执行，尝试使用现有文件
-              fi
-              sleep 10
-            fi
-          done
-
-      - name: Validate downloaded files
-        run: |
-          files_found=0
-          for file in IPV4.txt IPV6.txt IPV4.m3u; do
-            if [ -f "$file" ] && [ -s "$file" ]; then
-              echo "✓ $file: $(wc -l < "$file") lines"
-              files_found=$((files_found + 1))
-            else
-              echo "✗ $file: missing or empty"
-            fi
-          done
-          
-          if [ $files_found -eq 0 ]; then
-            echo "Error: No valid files downloaded"
-            exit 1
-          fi
-
-      - name: Clone Gitee Repo with Retry
+      - name: Clone Gitee Repo
         env:
           GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
         run: |
-          for attempt in {1..3}; do
-            echo "Attempt $attempt to clone Gitee repo..."
-            if git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo; then
-              echo "Gitee repo cloned successfully"
-              break
-            else
-              echo "Clone failed on attempt $attempt"
-              if [ $attempt -eq 3 ]; then
-                echo "All clone attempts failed"
-                exit 1
-              fi
-              sleep 15
-            fi
-          done
+          git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo
 
-      - name: Configure Git and Sync Files
-        env:
-          GITEE_USER: ${{ secrets.GITEE_USER }}
-          GITEE_REPO: ${{ secrets.GITEE_REPO }}
+      - name: Sync files
         run: |
           cd gitee-repo
-          
-          # Configure Git
-          git config user.name "GitHub Actions Sync"
+          git config user.name "GitHub Actions"
           git config user.email "actions@users.noreply.github.com"
-          
-          # Copy new files
+          git checkout master || git checkout -b master
           cp ../IPV4.txt ./
           cp ../IPV6.txt ./
           cp ../IPV4.m3u ./
-          
-          # Check file differences
-          echo "File changes detected:"
-          git status --short || echo "No git status available"
-          
-          # Commit and push
           git add IPV4.txt IPV6.txt IPV4.m3u
-          
-          if ! git diff --cached --quiet; then
-            git commit -m "Auto sync from GitHub - $(date +'%Y-%m-%d %H:%M:%S')"
-            
-            # Push with retry logic
-            for push_attempt in {1..3}; do
-              echo "Push attempt $push_attempt..."
-              if git pull --rebase origin main && git push origin main; then
-                echo "✓ Push successful"
-                break
-              else
-                echo "Push failed on attempt $push_attempt"
-                if [ $push_attempt -eq 3 ]; then
-                  echo "Forcing push after all attempts failed"
-                  git push -f origin main
-                fi
-                sleep 10
-              fi
-            done
-          else
-            echo "No changes to commit"
-          fi
+          git commit -m "Sync from GitHub" || exit 0
+          git push origin master
