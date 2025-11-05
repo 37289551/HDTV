@@ -58,6 +58,7 @@ jobs:
                   gsub(/CGTN外语纪录/, "CGTN记录", channel_name);
                   gsub(/CETV1/, "CETV-1", channel_name);
                   gsub(/CETV2/, "CETV-2", channel_name);
+                  gsub(/熊猫频道1/, "熊猫频道", channel_name);
                   
                   print channel_name "," $0 >> "output/remote.txt"
               }
