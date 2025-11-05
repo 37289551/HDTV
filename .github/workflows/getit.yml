@@ -1,5 +1,5 @@
 
-name: Convert and Sync M3U
+name: Convert M3U Playlist
 
 on:
   schedule:
@@ -10,6 +10,9 @@ on:
     paths:
       - 'output/**'
 
+permissions:
+  contents: write
+
 jobs:
   convert-m3u:
     runs-on: ubuntu-latest
@@ -19,26 +22,28 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: master
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create output directory
         run: mkdir -p output
-
-      - name: Clear existing content
-        run: |
-          > output/remote.txt
 
       - name: Download M3U file
         run: |
           curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
 
-      - name: Process M3U file
+      - name: Process M3U file to create remote.txt
         run: |
-          awk -F',' '
-          /^#EXTINF:/ { 
-              gsub(/^#EXTINF:.*,/, ""); 
-              channel_name = $0; 
-              getline; 
+          awk '
+          /^#EXTINF:/ {
+              info = $0;
+              getline;
               if ($0 !~ /^#/) {
+                  url = $0;
+                  # 提取频道名称（去掉#EXTINF:后的数字和逗号）
+                  gsub(/^#EXTINF:[0-9]+,/, "", info);
+                  channel_name = info;
+                  
+                  # CCTV频道名称标准化
                   gsub(/CCTV1综合/, "CCTV-1", channel_name);
                   gsub(/CCTV2财经/, "CCTV-2", channel_name);
                   gsub(/CCTV3综艺/, "CCTV-3", channel_name);
@@ -57,59 +62,51 @@ jobs:
                   gsub(/CCTV15音乐/, "CCTV-15", channel_name);
                   gsub(/CCTV16奥林匹克/, "CCTV-16", channel_name);
                   gsub(/CCTV17农业农村/, "CCTV-17", channel_name);
-                  gsub(/CCTV4欧洲/, "CCTV欧洲", channel_name);
-                  gsub(/CCTV4美洲/, "CCTV美洲", channel_name);
-                  gsub(/CGTN外语纪录/, "CGTN英语", channel_name);
-                  gsub(/CETV1/, "CETV-1", channel_name);
                   
-                  print channel_name "," $0 >> "output/remote.txt"
+                  # 输出到remote.txt
+                  print channel_name "," url >> "output/remote.txt"
               }
-          }' input.m3u
+          }
+          ' input.m3u
 
-      - name: Commit changes
+      - name: Merge with existing userresult.txt
         run: |
+          # 如果userresult.txt不存在，创建空文件
           touch output/userresult.txt
-          temp_file=$(mktemp)
           
-          while IFS= read -r line; do
-              if [ -n "$line" ]; then
-                  channel_name=$(echo "$line" | cut -d',' -f1)
-                  found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
-                  
-                  if [ -n "$found_line" ]; then
-                      line_num=$(echo "$found_line" | cut -d':' -f1)
-                      original_line=$(echo "$found_line" | cut -d':' -f2-)
-                      original_url=$(echo "$original_line" | cut -d',' -f2)
-                      if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          sed -i "${line_num}d" "output/userresult.txt"
-                          echo "删除原频道 $channel_name (域名匹配)"
-                      fi
-                      
-                      new_found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
-                      if [ -n "$new_found_line" ]; then
-                          new_line_num=$(echo "$new_found_line" | cut -d':' -f1)
-                          sed -i "${new_line_num}i\\$line" "output/userresult.txt"
-                          echo "在行号 $new_line_num 前插入频道 $channel_name"
-                      else
-                          echo "$line" >> "output/userresult.txt"
-                          echo "添加频道 $channel_name 到文件末尾"
-                      fi
-                  else
-                      echo "频道 $channel_name 未在userresult.txt中找到，跳过添加"
+          # 创建临时文件用于合并
+          cat output/userresult.txt > temp_merged.txt
+          
+          # 读取remote.txt并智能合并
+          while IFS=',' read -r channel url; do
+              # 清理变量中的空格
+              channel=$(echo "$channel" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+              url=$(echo "$url" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+              
+              # 检查是否已存在该频道
+              if grep -q "^$channel," temp_merged.txt; then
+                  # 如果存在，检查是否需要更新（特定域名）
+                  if [[ "$url" == *"特定域名"* ]]; then
+                      # 更新该频道的URL
+                      sed -i "s|^$channel,.*|$channel,$url|" temp_merged.txt
                   fi
+              else
+                  # 如果不存在，添加新频道
+                  echo "$channel,$url" >> temp_merged.txt
               fi
-          done < "output/remote.txt"
+          done < output/remote.txt
           
-          rm -f "$temp_file"
+          # 移动临时文件到最终位置
+          mv temp_merged.txt output/userresult.txt
 
-
-      - name: 提交转换结果
+      - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add output/remote.txt output/userresult.txt
-          git diff --staged --quiet || git commit -m "自动更新频道清单 [skip ci]"
+          git add output/
+          git diff --staged --quiet || git commit -m "Auto-update IPTV playlist $(date +'%Y-%m-%d %H:%M:%S')"
           git push
+
           
   sync-to-gitee:
     runs-on: ubuntu-latest
