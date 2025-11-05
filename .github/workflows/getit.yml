@@ -33,6 +33,9 @@ jobs:
 
       - name: Process M3U file to create remote.txt
         run: |
+          # 清空remote.txt文件
+          > output/remote.txt
+          
           awk '
           /^#EXTINF:/ {
               info = $0;
@@ -66,47 +69,86 @@ jobs:
                   # 输出到remote.txt
                   print channel_name "," url >> "output/remote.txt"
               }
-          }
-          ' input.m3u
+          }' input.m3u
 
-      - name: Merge with existing userresult.txt
+      - name: Check if remote.txt is empty
         run: |
-          # 如果userresult.txt不存在，创建空文件
-          touch output/userresult.txt
+          if [ ! -s output/remote.txt ]; then
+            echo "remote.txt is empty, creating placeholder"
+            echo "# No channels found" > output/remote.txt
+          fi
+
+      - name: Merge remote.txt with userresult.txt
+        run: |
+          # 检查userresult.txt是否存在
+          if [ ! -f output/userresult.txt ]; then
+            echo "userresult.txt does not exist, skipping merge"
+            exit 0
+          fi
           
-          # 创建临时文件用于合并
-          cat output/userresult.txt > temp_merged.txt
+          # 创建临时文件
+          temp_file=$(mktemp)
           
-          # 读取remote.txt并智能合并
-          while IFS=',' read -r channel url; do
-              # 清理变量中的空格
-              channel=$(echo "$channel" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-              url=$(echo "$url" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          # 读取remote.txt中的频道
+          while IFS= read -r line; do
+            if [ -n "$line" ] && [[ "$line" != "#"* ]]; then
+              # 提取频道名称和URL
+              channel_name=$(echo "$line" | cut -d',' -f1)
+              channel_url=$(echo "$line" | cut -d',' -f2-)
               
-              # 检查是否已存在该频道
-              if grep -q "^$channel," temp_merged.txt; then
-                  # 如果存在，检查是否需要更新（特定域名）
-                  if [[ "$url" == *"特定域名"* ]]; then
-                      # 更新该频道的URL
-                      sed -i "s|^$channel,.*|$channel,$url|" temp_merged.txt
+              # 在userresult.txt中查找相同频道
+              found_channel=false
+              insert_position=0
+              target_line=""
+              
+              # 读取userresult.txt查找匹配的频道
+              line_number=0
+              while IFS= read -r user_line; do
+                line_number=$((line_number + 1))
+                if [ -n "$user_line" ] && [[ "$user_line" != "#"* ]]; then
+                  user_channel=$(echo "$user_line" | cut -d',' -f1)
+                  if [ "$user_channel" = "$channel_name" ]; then
+                    found_channel=true
+                    insert_position=$line_number
+                    target_line="$user_line"
+                    break
                   fi
-              else
-                  # 如果不存在，添加新频道
-                  echo "$channel,$url" >> temp_merged.txt
+                fi
+              done < output/userresult.txt
+              
+              if [ "$found_channel" = true ]; then
+                # 检查目标频道的URL是否以指定域名开头
+                if [[ "$target_line" == http://gslbmgsplive.miguvideo.com* ]]; then
+                  # 替换该频道
+                  echo "Replacing channel: $channel_name"
+                  awk -v pos="$insert_position" -v new_line="$line" '
+                  NR == pos { print new_line; next }
+                  { print }
+                  ' output/userresult.txt > "$temp_file"
+                  mv "$temp_file" output/userresult.txt
+                else
+                  # 添加到该频道之前
+                  echo "Inserting channel before: $channel_name"
+                  awk -v pos="$insert_position" -v new_line="$line" '
+                  NR == pos { print new_line }
+                  { print }
+                  ' output/userresult.txt > "$temp_file"
+                  mv "$temp_file" output/userresult.txt
+                fi
               fi
+            fi
           done < output/remote.txt
           
-          # 移动临时文件到最终位置
-          mv temp_merged.txt output/userresult.txt
+          # 清理临时文件
+          rm -f "$temp_file"
 
-      - name: Commit and push changes
+      - name: Commit and push if changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add output/
-          git diff --staged --quiet || git commit -m "Auto-update IPTV playlist $(date +'%Y-%m-%d %H:%M:%S')"
+          git add output/remote.txt output/userresult.txt
+          git diff --staged --quiet || git commit -m "Update channel lists with latest M3U data and merge results"
           git push
-
           
   sync-to-gitee:
     runs-on: ubuntu-latest
