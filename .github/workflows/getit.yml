@@ -73,7 +73,50 @@ jobs:
           git add output/remote.txt
           git commit -m "Update channel list" || exit 0
           git push origin master
+          
+          touch output/userresult.txt
+          temp_file=$(mktemp)
+          
+          while IFS= read -r line; do
+              if [ -n "$line" ]; then
+                  channel_name=$(echo "$line" | cut -d',' -f1)
+                  found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
+                  
+                  if [ -n "$found_line" ]; then
+                      line_num=$(echo "$found_line" | cut -d':' -f1)
+                      original_line=$(echo "$found_line" | cut -d':' -f2-)
+                      original_url=$(echo "$original_line" | cut -d',' -f2)
+                      if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
+                          sed -i "${line_num}d" "output/userresult.txt"
+                          echo "删除原频道 $channel_name (域名匹配)"
+                      fi
+                      
+                      new_found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
+                      if [ -n "$new_found_line" ]; then
+                          new_line_num=$(echo "$new_found_line" | cut -d':' -f1)
+                          sed -i "${new_line_num}i\\$line" "output/userresult.txt"
+                          echo "在行号 $new_line_num 前插入频道 $channel_name"
+                      else
+                          echo "$line" >> "output/userresult.txt"
+                          echo "添加频道 $channel_name 到文件末尾"
+                      fi
+                  else
+                      echo "频道 $channel_name 未在userresult.txt中找到，跳过添加"
+                  fi
+              fi
+          done < "output/remote.txt"
+          
+          rm -f "$temp_file"
 
+
+      - name: 提交转换结果
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add output/remote.txt output/userresult.txt
+          git diff --staged --quiet || git commit -m "自动更新频道清单 [skip ci]"
+          git push
+          
   sync-to-gitee:
     runs-on: ubuntu-latest
     needs: convert-m3u
