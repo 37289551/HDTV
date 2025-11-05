@@ -68,12 +68,6 @@ jobs:
 
       - name: Commit changes
         run: |
-          git config user.email "action@github.com"
-          git config user.name "GitHub Action"
-          git add output/remote.txt
-          git commit -m "Update channel list" || exit 0
-          git push origin master
-          
           touch output/userresult.txt
           temp_file=$(mktemp)
           
