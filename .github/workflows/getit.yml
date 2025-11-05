@@ -83,6 +83,37 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: master
+       
+      - name: Debug Secrets
+        env:
+          GITEE_USER: ${{ secrets.GITEE_USER }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_REPO: ${{ secrets.GITEE_REPO }}
+        run: |
+          echo "=== Secrets Debug Information ==="
+          echo "GITEE_USER: $GITEE_USER"
+          echo "GITEE_TOKEN: $GITEE_TOKEN"
+          GITEE_REPO: $GITEE_REPO"
+          echo "=== Secrets Debug Information ==="
+          
+          # 验证 secrets 是否为空
+          if [ -z "$GITEE_USER" ]; then
+            echo "❌ GITEE_USER is empty"
+          else
+            echo "✅ GITEE_USER is set"
+          fi
+          
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "❌ GITEE_TOKEN is empty"
+          else
+            echo "✅ GITEE_TOKEN is set"
+          fi
+          
+          if [ -z "$GITEE_REPO" ]; then
+            echo "❌ GITEE_REPO is empty"
+          else
+            echo "✅ GITEE_REPO is set"
+          fi
 
       - name: Download files
         run: |
