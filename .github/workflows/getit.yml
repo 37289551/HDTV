@@ -1,161 +1,153 @@
 
-name: Convert M3U Playlist
+
+name: Channel List Processor
 
 on:
   schedule:
-    - cron: '2 */2 * * *'
-  workflow_dispatch:
-  push:
-    branches: [master]
-    paths:
-      - 'output/**'
-
-permissions:
-  contents: write
+    - cron: '0 */2 * * *'  # 每两小时执行一次
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
-  convert-m3u:
+  process-channels:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: master
-          token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: master
 
-      - name: Create output directory
-        run: mkdir -p output
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
 
-      - name: Download M3U file
-        run: |
-          curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
+    - name: Install dependencies
+      run: pip install requests
 
-      - name: Process M3U file to create remote.txt
-        run: |
-          # 清空remote.txt文件
-          > output/remote.txt
-          
-          awk '
-          /^#EXTINF:/ {
-              info = $0;
-              getline;
-              if ($0 !~ /^#/) {
-                  url = $0;
-                  # 提取频道名称（去掉#EXTINF:后的数字和逗号）
-                  gsub(/^#EXTINF:[0-9]+,/, "", info);
-                  channel_name = info;
-                  
-                  # 清理频道名称中的多余空格
-                  gsub(/^[ \t]+|[ \t]+$/, "", channel_name);
-                  
-                  # CCTV频道名称标准化
-                  gsub(/CCTV1综合/, "CCTV-1", channel_name);
-                  gsub(/CCTV2财经/, "CCTV-2", channel_name);
-                  gsub(/CCTV3综艺/, "CCTV-3", channel_name);
-                  gsub(/CCTV4中文国际/, "CCTV-4", channel_name);
-                  gsub(/CCTV5体育/, "CCTV-5", channel_name);
-                  gsub(/CCTV5\+体育赛事/, "CCTV-5+", channel_name);
-                  gsub(/CCTV6电影/, "CCTV-6", channel_name);
-                  gsub(/CCTV7国防军事/, "CCTV-7", channel_name);
-                  gsub(/CCTV8电视剧/, "CCTV-8", channel_name);
-                  gsub(/CCTV9纪录/, "CCTV-9", channel_name);
-                  gsub(/CCTV10科教/, "CCTV-10", channel_name);
-                  gsub(/CCTV11戏曲/, "CCTV-11", channel_name);
-                  gsub(/CCTV12社会与法/, "CCTV-12", channel_name);
-                  gsub(/CCTV13新闻/, "CCTV-13", channel_name);
-                  gsub(/CCTV14少儿/, "CCTV-14", channel_name);
-                  gsub(/CCTV15音乐/, "CCTV-15", channel_name);
-                  gsub(/CCTV16奥林匹克/, "CCTV-16", channel_name);
-                  gsub(/CCTV17农业农村/, "CCTV-17", channel_name);
-                  
-                  # 输出标准格式：频道名称,URL
-                  print channel_name "," url >> "output/remote.txt"
-              }
-          }' input.m3u
+    - name: Download and process m3u file
+      run: |
+        mkdir -p output
+        python << 'EOF'
+        import requests
+        import re
+        
+        # 下载远程m3u文件
+        url = "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt"
+        response = requests.get(url)
+        m3u_content = response.text
+        
+        # 解析m3u格式并转换为txt标准格式
+        lines = m3u_content.split('\n')
+        output_lines = []
+        
+        # CCTV频道名称标准化映射
+        channel_mapping = {
+            "CCTV1综合": "CCTV-1",
+            "CCTV2财经": "CCTV-2", 
+            "CCTV3综艺": "CCTV-3",
+            "CCTV4中文国际": "CCTV-4",
+            "CCTV5体育": "CCTV-5",
+            "CCTV5+体育赛事": "CCTV-5+",
+            "CCTV6电影": "CCTV-6",
+            "CCTV7国防军事": "CCTV-7",
+            "CCTV8电视剧": "CCTV-8",
+            "CCTV9纪录": "CCTV-9",
+            "CCTV10科教": "CCTV-10",
+            "CCTV11戏曲": "CCTV-11",
+            "CCTV12社会与法": "CCTV-12",
+            "CCTV13新闻": "CCTV-13",
+            "CCTV14少儿": "CCTV-14",
+            "CCTV15音乐": "CCTV-15",
+            "CCTV16奥林匹克": "CCTV-16",
+            "CCTV17农业农村": "CCTV-17",
+	    "CCTV4欧洲":"CCTV欧洲",
+	    "CCTV4美洲":"CCTV美洲",
+	    "CGTN外语纪录":"CGTN英语",
+	    "CETV1":"CETV-1",
+	    "CETV2":"CETV-2",
+        }
+        
+        current_channel = None
+        for line in lines:
+            line = line.strip()
+            if line.startswith('#EXTINF:'):
+                # 提取频道名称
+                match = re.search(r',(.+)$', line)
+                if match:
+                    current_channel = match.group(1)
+                    # 应用频道映射
+                    for old_name, new_name in channel_mapping.items():
+                        if old_name in current_channel:
+                            current_channel = current_channel.replace(old_name, new_name)
+            elif line.startswith('http'):
+                if current_channel:
+                    output_lines.append(f"{current_channel}, {line}")
+                    current_channel = None
+        
+        # 清空原文件内容并写入新内容
+        with open('output/remote.txt', 'w', encoding='utf-8') as f:
+            f.write('\n'.join(output_lines))
+        
+        print(f"成功处理 {len(output_lines)} 个频道")
+        EOF
 
-      - name: Check if remote.txt is empty
-        run: |
-          if [ ! -s output/remote.txt ]; then
-            echo "remote.txt is empty, creating placeholder"
-            echo "# No channels found" > output/remote.txt
-          else
-            echo "remote.txt created successfully with content:"
-            head -5 output/remote.txt
-          fi
+    - name: Merge channels to user result
+      run: |
+        python << 'EOF'
+        import os
+        
+        def read_channels(filename):
+            """读取频道文件，返回频道字典"""
+            if not os.path.exists(filename):
+                return {}
+            
+            channels = {}
+            with open(filename, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and ',' in line:
+                        name, url = line.split(',', 1)
+                        channels[name.strip()] = url.strip()
+            return channels
+        
+        def write_channels(filename, channels):
+            """将频道字典写入文件"""
+            with open(filename, 'w', encoding='utf-8') as f:
+                for name, url in channels.items():
+                    f.write(f"{name}, {url}\n")
+        
+        # 读取remote.txt和userresult.txt
+        remote_channels = read_channels('output/remote.txt')
+        user_channels = read_channels('output/userresult.txt')
+        
+        # 处理频道合并
+        for remote_name, remote_url in remote_channels.items():
+            if remote_name in user_channels:
+                # 检查现有频道地址是否以特定前缀开头
+                existing_url = user_channels[remote_name]
+                if existing_url.startswith('http://gslbmgsplive.miguvideo.com'):
+                    # 替换频道
+                    user_channels[remote_name] = remote_url
+                    print(f"替换频道: {remote_name}")
+                else:
+                    # 添加到前面（这里实现为保持原有顺序，但标记已处理）
+                    user_channels[remote_name] = remote_url
+                    print(f"更新频道: {remote_name}")
+            # 如果目标文件不存在相同频道，则不添加
+        
+        # 写入合并后的结果
+        write_channels('output/userresult.txt', user_channels)
+        print(f"合并完成，共处理 {len(user_channels)} 个频道")
+        EOF
 
-      - name: Merge remote.txt with userresult.txt
-        run: |
-          # 检查userresult.txt是否存在
-          if [ ! -f output/userresult.txt ]; then
-            echo "userresult.txt does not exist, skipping merge"
-            exit 0
-          fi
-          
-          # 创建临时文件
-          temp_file=$(mktemp)
-          
-          # 读取remote.txt中的频道
-          while IFS= read -r line; do
-            if [ -n "$line" ] && [[ "$line" != "#"* ]]; then
-              # 提取频道名称和URL
-              channel_name=$(echo "$line" | cut -d',' -f1)
-              channel_url=$(echo "$line" | cut -d',' -f2-)
-              
-              # 在userresult.txt中查找相同频道
-              found_channel=false
-              insert_position=0
-              target_line=""
-              
-              # 读取userresult.txt查找匹配的频道
-              line_number=0
-              while IFS= read -r user_line; do
-                line_number=$((line_number + 1))
-                if [ -n "$user_line" ] && [[ "$user_line" != "#"* ]]; then
-                  user_channel=$(echo "$user_line" | cut -d',' -f1)
-                  if [ "$user_channel" = "$channel_name" ]; then
-                    found_channel=true
-                    insert_position=$line_number
-                    target_line="$user_line"
-                    break
-                  fi
-                fi
-              done < output/userresult.txt
-              
-              if [ "$found_channel" = true ]; then
-                # 检查目标频道的URL是否以指定域名开头
-                if [[ "$target_line" == http://gslbmgsplive.miguvideo.com* ]]; then
-                  # 替换该频道
-                  echo "Replacing channel: $channel_name"
-                  awk -v pos="$insert_position" -v new_line="$line" '
-                  NR == pos { print new_line; next }
-                  { print }
-                  ' output/userresult.txt > "$temp_file"
-                  mv "$temp_file" output/userresult.txt
-                else
-                  # 添加到该频道之前
-                  echo "Inserting channel before: $channel_name"
-                  awk -v pos="$insert_position" -v new_line="$line" '
-                  NR == pos { print new_line }
-                  { print }
-                  ' output/userresult.txt > "$temp_file"
-                  mv "$temp_file" output/userresult.txt
-                fi
-              fi
-            fi
-          done < output/remote.txt
-          
-          # 清理临时文件
-          rm -f "$temp_file"
-
-      - name: Commit and push if changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add output/remote.txt output/userresult.txt
-          git diff --staged --quiet || git commit -m "Update channel lists with latest M3U data and merge results"
-          git push
-
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add output/
+        git diff --staged --quiet || git commit -m "Auto-update: Process channel lists $(date +'%Y-%m-%d %H:%M:%S')"
+        git push origin master
           
   sync-to-gitee:
     runs-on: ubuntu-latest
