@@ -184,15 +184,6 @@ jobs:
           echo "✅ 变更已成功推送到仓库"
         fi
 
-          
-Sync to Gitee
-
-on:
-  push:
-    branches: [ master ]
-  workflow_dispatch:  # 允许手动触发
-
-jobs:
   sync-to-gitee:
     runs-on: ubuntu-latest
     name: 🚀 GitHub to Gitee Sync
