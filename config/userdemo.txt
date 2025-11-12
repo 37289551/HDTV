@@ -164,6 +164,12 @@ BBC,http://198.16.100.186:8278/bbc2_antik/playlist.m3u8?tid=MABA3261818232618182
 时尚TV,http://lb.streaming.sk/fashiontv/stream/chunklist_w765383554.m3u8$!
 
 影院测试,#genre#
+经典香港电影
+抗战经典影片
+新片放映厅
+CHC影迷电影
+高清大片
+南方影视
 经典香港电影,http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8$!
 抗战经典影片,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100002089-150/index.m3u8$!
 新片放映厅,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100030975-150/index.m3u8$!
