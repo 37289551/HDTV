@@ -2,7 +2,7 @@ name: Sync Handle
 on:
   schedule:
     - cron: '56 1-23/2 * * *'  #  
-  workflow_dispatch:  #  
+  workflow_dispatch:  #  Mannual trigger allowed
 
 jobs:
   convert-m3u:
@@ -96,13 +96,11 @@ jobs:
           INPUT_FILE: "output/remote.txt"
           OUTPUT_FILE: "output/userresult.txt"
         run: |
-          # 确保输出文件存在
           touch "$OUTPUT_FILE"
 
-          echo "开始处理频道信息更新..."
+          echo "Update started ..."
           echo "================================"
 
-          # 处理统计变量
           total_processed=0
           success_updates=0
           skipped_channels=0
@@ -110,38 +108,28 @@ jobs:
           while IFS= read -r line; do
               if [ -n "$line" ]; then
                   total_processed=$((total_processed + 1))
-                  
-                  # 提取频道名称
                   channel_name=$(echo "$line" | cut -d',' -f1)
-                  echo "处理频道: $channel_name"
-                  
-                  # 查找频道在目标文件中的位置
+                  echo "Channel Update: $channel_name"
                   found_line=$(grep -n "^$channel_name," "$OUTPUT_FILE" | head -1)
                   
                   if [ -n "$found_line" ]; then
                       line_num=$(echo "$found_line" | cut -d':' -f1)
                       original_line=$(echo "$found_line" | cut -d':' -f2-)
                       original_url=$(echo "$original_line" | cut -d',' -f2)
-                      
-                      # 检查是否需要更新
+
                       if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          # 步骤1：先插入新行（在原有行之前插入）
                           sed -i "${line_num}i\\$line" "$OUTPUT_FILE"
-                          echo "✅ 插入新行: $channel_name (位置: $line_num)"
-                          
-                          # 步骤2：再删除原有行
-                          # 注意：由于已经插入了一行，原有行的行号需要+1
+                          echo "✅ New line: $channel_name (Po.: $line_num)"
                           new_line_num=$((line_num + 1))
                           sed -i "${new_line_num}d" "$OUTPUT_FILE"
-                          echo "✅ 删除旧行: $channel_name (位置: $new_line_num)"
-                          
+                          echo "✅ Delete original: $channel_name (Po.: $new_line_num)"
                           success_updates=$((success_updates + 1))
                       else
-                          echo "⏭️  跳过频道: $channel_name (URL无需替换)"
+                          echo "⏭️  Skip: $channel_name (No need change)"
                           skipped_channels=$((skipped_channels + 1))
                       fi
                   else
-                      echo "❌ 频道不存在: $channel_name，跳过"
+                      echo "❌ Channel not exist: $channel_name，Skip"
                       skipped_channels=$((skipped_channels + 1))
                   fi
                   
@@ -150,10 +138,10 @@ jobs:
           done < "$INPUT_FILE"
 
           echo "================================"
-          echo "处理完成！"
-          echo "总计处理: $total_processed 个频道"
-          echo "成功更新: $success_updates 个频道"
-          echo "跳过处理: $skipped_channels 个频道"
+          echo "Job Done！"
+          echo "Totally: $total_processed Channels"
+          echo "Updated: $success_updates Channels"
+          echo "Skipped: $skipped_channels Channels"
 
       - name: COMMIT THE CHANGES
         run: |
