@@ -92,42 +92,67 @@ jobs:
 
       - name: ADD TO OUTPUT
         run: |
-          # CHECK FILE
-          touch output/userresult.txt
-          temp_file=$(mktemp)
-          
-          echo "开始处理频道信息更新..."
-          echo "================================"
-          
-          while IFS= read -r line; do
-              if [ -n "$line" ]; then
-                  channel_name=$(echo "$line" | cut -d',' -f1)
-                  # use fixed-string grep and include beginning-of-line anchor
-                  found_line=$(grep -Fn "^${channel_name}," "output/userresult.txt" | head -n 1)
-                  
-                  if [ -n "$found_line" ]; then
-                      line_num=$(echo "$found_line" | cut -d':' -f1)
-                      original_line=$(echo "$found_line" | cut -d':' -f2-)
-                      original_url=$(echo "$original_line" | cut -d',' -f2)
-                      
-                      # 条件性替换：仅替换特定URL模式的频道
-                      if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          # use awk to safely replace the whole line at line_num
-                          awk -v ln="$line_num" -v new="$line" 'NR==ln{$0=new} {print}' "output/userresult.txt" > "$temp_file" && mv "$temp_file" "output/userresult.txt"
-                          echo "✅ 替换频道: $channel_name (旧URL: $original_url)"
-                      else
-                          echo "⏭️  跳过频道: $channel_name (URL无需替换)"
-                      fi
-                  else
-                      echo "❌ 频道不存在: $channel_name，跳过"
-                  fi
-              fi
-          done < "output/remote.txt"
-          
-          echo "================================"
-          echo "频道信息更新完成！"
-          
-          rm -f "$temp_file"
+         INPUT_FILE="output/remote.txt"
+OUTPUT_FILE="output/userresult.txt"
+
+# 确保输出文件存在
+touch "$OUTPUT_FILE"
+
+echo "开始处理频道信息更新..."
+echo "================================"
+
+# 处理统计变量
+total_processed=0
+success_updates=0
+skipped_channels=0
+
+while IFS= read -r line; do
+    if [ -n "$line" ]; then
+        total_processed=$((total_processed + 1))
+        
+        # 提取频道名称
+        channel_name=$(echo "$line" | cut -d',' -f1)
+        echo "处理频道: $channel_name"
+        
+        # 查找频道在目标文件中的位置
+        found_line=$(grep -n "^$channel_name," "$OUTPUT_FILE" | head -1)
+        
+        if [ -n "$found_line" ]; then
+            line_num=$(echo "$found_line" | cut -d':' -f1)
+            original_line=$(echo "$found_line" | cut -d':' -f2-)
+            original_url=$(echo "$original_line" | cut -d',' -f2)
+            
+            # 检查是否需要更新
+            if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
+                # 步骤1：先插入新行（在原有行之前插入）
+                sed -i "${line_num}i\\$line" "$OUTPUT_FILE"
+                echo "✅ 插入新行: $channel_name (位置: $line_num)"
+                
+                # 步骤2：再删除原有行
+                # 注意：由于已经插入了一行，原有行的行号需要+1
+                new_line_num=$((line_num + 1))
+                sed -i "${new_line_num}d" "$OUTPUT_FILE"
+                echo "✅ 删除旧行: $channel_name (位置: $new_line_num)"
+                
+                success_updates=$((success_updates + 1))
+            else
+                echo "⏭️  跳过频道: $channel_name (URL无需替换)"
+                skipped_channels=$((skipped_channels + 1))
+            fi
+        else
+            echo "❌ 频道不存在: $channel_name，跳过"
+            skipped_channels=$((skipped_channels + 1))
+        fi
+        
+        echo "--------------------------------"
+    fi
+done < "$INPUT_FILE"
+
+echo "================================"
+echo "处理完成！"
+echo "总计处理: $total_processed 个频道"
+echo "成功更新: $success_updates 个频道"
+echo "跳过处理: $skipped_channels 个频道"
 
       - name: COMMIT THE CHANGES
         run: |
