@@ -185,16 +185,16 @@ https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index_4.m
 https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index_4.m3u8?zshijd
 #EXTINF:-1 tvg-name="时尚TV" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/时尚TV.png" group-title="特区频道",时尚TV
 http://lb.streaming.sk/fashiontv/stream/chunklist_w765383554.m3u8
-#EXTINF:-1 tvg-name="经典香港电影" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/经典香港电影.png" group-title="影院测试",经典香港电影
+#EXTINF:-1 tvg-name="经典影片" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/经典影片.png" group-title="影院测试",经典影片
 http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8
-#EXTINF:-1 tvg-name="抗战经典影片" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/抗战经典影片.png" group-title="影院测试",抗战经典影片
+#EXTINF:-1 tvg-name="港片经典" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/港片经典.png" group-title="影院测试",港片经典
+http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8
+#EXTINF:-1 tvg-name="抗战影片" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/抗战影片.png" group-title="影院测试",抗战影片
 http://gslbmgsplive.miguvideo.com/wd-virtuallive5100002089-150/index.m3u8
-#EXTINF:-1 tvg-name="新片放映厅" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/新片放映厅.png" group-title="影院测试",新片放映厅
+#EXTINF:-1 tvg-name="新片放映" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/新片放映.png" group-title="影院测试",新片放映
 http://gslbmgsplive.miguvideo.com/wd-virtuallive5100030975-150/index.m3u8
-#EXTINF:-1 tvg-name="CHC影迷电影" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/CHC影迷电影.png" group-title="影院测试",CHC影迷电影
+#EXTINF:-1 tvg-name="CHC影院" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/CHC影院.png" group-title="影院测试",CHC影院
 http://gslbmgsplive.miguvideo.com/migu/kailu/chcymdy/51/20250415/index.m3u8
-#EXTINF:-1 tvg-name="高清大片" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/高清大片.png" group-title="影院测试",高清大片
-http://gslbmgsplive.miguvideo.com/migu/kailu/gaoqingdapian/51/20250514/index.m3u8
 #EXTINF:-1 tvg-name="南方影视" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/南方影视.png" group-title="影院测试",南方影视
 http://gslbmgsplive.miguvideo.com/wd_r1/2018/nfmedia/nfys/1000/index.m3u8
 #EXTINF:-1 tvg-name="江苏新闻" tvg-logo="https://raw.githubusercontent.com/fanmingming/live/main/tv/江苏新闻.png" group-title="地方频道",江苏新闻
