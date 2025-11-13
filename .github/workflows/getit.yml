@@ -105,37 +105,47 @@ jobs:
           total_processed=0
           success_updates=0
           skipped_channels=0
+          new_channels_added=0
 
           while IFS= read -r line; do
-              if [ -n "$line" ]; then
-                  total_processed=$((total_processed + 1))
-                  channel_name=$(echo "$line" | cut -d',' -f1)
-                  echo "Channel Update: $channel_name"
-                  found_line=$(grep -n "^$channel_name," "$OUTPUT_FILE" | head -1)
-                  
-                  if [ -n "$found_line" ]; then
-                      line_num=$(echo "$found_line" | cut -d':' -f1)
-                      original_line=$(echo "$found_line" | cut -d':' -f2-)
-                      original_url=$(echo "$original_line" | cut -d',' -f2)
-
-                      if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          sed -i "${line_num}i\\$line" "$OUTPUT_FILE"
-                          echo "✅ New line: $channel_name (Po.: $line_num)"
-                          new_line_num=$((line_num + 1))
-                          sed -i "${new_line_num}d" "$OUTPUT_FILE"
-                          echo "✅ Delete original: $channel_name (Po.: $new_line_num)"
-                          success_updates=$((success_updates + 1))
-                      else
-                          echo "⏭️  Skip: $channel_name (No need change)"
-                          skipped_channels=$((skipped_channels + 1))
-                      fi
-                  else
-                      echo "❌ Channel not exist: $channel_name，Skip"
-                      skipped_channels=$((skipped_channels + 1))
-                  fi
-                  
-                  echo "--------------------------------"
-              fi
+            if [ -n "$line" ]; then
+              total_processed=$((total_processed + 1))
+              channel_name=$(echo "$line" | cut -d',' -f1)
+              new_url=$(echo "$line" | cut -d',' -f2)
+        
+              echo "频道更新: $channel_name"
+              echo "新URL: $new_url"
+        
+              # 查找目标文件中该频道的所有行
+              found_lines=$(grep -n "^$channel_name," "$OUTPUT_FILE")
+        
+              if [ -n "$found_lines" ]; then
+              # 获取第一个匹配的行
+                first_line=$(echo "$found_lines" | head -1)
+                line_num=$(echo "$first_line" | cut -d':' -f1)
+                original_line=$(echo "$first_line" | cut -d':' -f2-)
+                original_url=$(echo "$original_line" | cut -d',' -f2)
+            
+                echo "原URL: $original_url"
+            
+                # 判断原URL是否以特定域名开头
+                if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
+                # 情况1：原URL以特定域名开头 - 替换它
+                   sed -i "${line_num}s|.*|$line|" "$OUTPUT_FILE"
+                    echo "✅ 替换频道: $channel_name (位置: $line_num)"
+                    success_updates=$((success_updates + 1))
+                else
+                  # 情况2：原URL不以特定域名开头 - 添加到第一个频道前面
+                  sed -i "${line_num}i\\$line" "$OUTPUT_FILE"
+                  echo "✅ 新增频道到前面: $channel_name (位置: $line_num)"
+                  new_channels_added=$((new_channels_added + 1))
+                fi
+            else
+              # 情况3：没有相同频道 - 跳过
+              echo "⏭️ 跳过: $channel_name (无相同频道)"
+              skipped_channels=$((skipped_channels + 1))
+            fi
+          fi
           done < "$INPUT_FILE"
 
           echo "================================"
@@ -143,6 +153,7 @@ jobs:
           echo "Totally: $total_processed Channels"
           echo "Updated: $success_updates Channels"
           echo "Skipped: $skipped_channels Channels"
+          echo "Skipped: $new_channels_added Channels"
 
       - name: COMMIT THE CHANGES
         run: |
