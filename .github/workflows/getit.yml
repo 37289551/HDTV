@@ -91,9 +91,9 @@ jobs:
           }' input.m3u
 
       - name: ADD TO OUTPUT
+          INPUT_FILE="output/remote.txt"
+          OUTPUT_FILE="output/userresult.txt"
         run: |
-         INPUT_FILE="output/remote.txt"
-OUTPUT_FILE="output/userresult.txt"
 
 # 确保输出文件存在
 touch "$OUTPUT_FILE"
