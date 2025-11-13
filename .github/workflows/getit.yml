@@ -116,19 +116,21 @@ jobs:
                   if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
                   # 替换该行内容
                     sed -i "${line_num}s|.*|$line|" "output/userresult.txt"
-                    echo "✅ 替换"
-                    else
+                    echo "替换"
+                  else
                   # 原URL不以指定域名开头，添加
-                      sed -i "${line_num}i\\$line" "output/userresult.txt"
-                      echo "✅ 新增"
+                  # sed -i "${line_num}i\\$line" "output/userresult.txt"
+                    echo "新增"
                   fi
               else
-              # 没有找到相同频道，跳过
+              # 没有找到相同频道，跳过 
                 echo "⏭️ 跳过频道"
               fi
                 echo "---"
           fi
           done < "output/remote.txt"
+          
+          trap 'rm -f "$temp_file"
 
       - name: COMMIT THE CHANGES
         run: |
