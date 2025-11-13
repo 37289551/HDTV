@@ -410,12 +410,12 @@ CNA,https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index
 时尚TV,http://lb.streaming.sk/fashiontv/stream/chunklist_w765383554.m3u8
 
 影院测试,#genre#
-经典影片,http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8
-港片经典,http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8
-抗战影片,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100002089-150/index.m3u8
-新片放映,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100030975-150/index.m3u8
-CHC影院,http://gslbmgsplive.miguvideo.com/migu/kailu/chcymdy/51/20250415/index.m3u8
-南方影视,http://gslbmgsplive.miguvideo.com/wd_r1/2018/nfmedia/nfys/1000/index.m3u8
+经典影片,http://gslbmgsplive.miguvideo.com/migu/virtuallive2/5900002411/51/20210706/index.m3u8?msisdn=20251113180033345faba36c9c4853aa074924c6547aa4&mdspid=&spid=800033&netType=0&sid=5910019525&pid=2028597139&timestamp=20251113180033&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=713591450&ParentNodeID=-99&assertID=5910019525&client_ip=106.13.250.90&SecurityKey=20251113180033&promotionId=&mvid=5900002421&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=5965fa072e4447c539e110edb780b018&ddCalcu=8519e061b530f08a70b7d2ee041414e79c35
+港片经典,http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8?msisdn=202511131800337d6ec2e19fc74754a109ec9fcf5417ca&mdspid=&spid=800033&netType=0&sid=5500242089&pid=2028597139&timestamp=20251113180033&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=625703337&ParentNodeID=-99&assertID=5500242089&client_ip=106.13.250.90&SecurityKey=20251113180033&promotionId=&mvid=5100180869&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=4ae2f0f41e01794db5ce5de2a7eac364&ddCalcu=446ae3e1c25af0e07fa421eed051e7c954bd
+抗战影片,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100002089-150/index.m3u8?msisdn=202511131800332b0a5107b76b4b0dab1e6082f11d733a&mdspid=&spid=800033&netType=0&sid=5500002717&pid=2028597139&timestamp=20251113180033&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=617432318&ParentNodeID=-99&assertID=5500002717&client_ip=106.13.250.90&SecurityKey=20251113180033&promotionId=&mvid=5100002089&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=3b8de1dc3287330d751f511ac463ce46&ddCalcu=634bee81cd73e0614dcca3121857f313507d
+新片放映,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100030975-150/index.m3u8?msisdn=202511131800333c6b87bfee4a4167b412dc4667c992df&mdspid=&spid=800033&netType=0&sid=5500035175&pid=2028597139&timestamp=20251113180033&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=619495952&ParentNodeID=-99&assertID=5500035175&client_ip=106.13.250.90&SecurityKey=20251113180033&promotionId=&mvid=5100030975&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=f3ebbb33ba6efae8c2421c13de5e885d&ddCalcu=df53e8e18b9eb05be3d33b1ac61e2f4a2ec8
+CHC影院,http://gslbmgsplive.miguvideo.com/migu/kailu/chcymdy/51/20250415/index.m3u8?msisdn=20251113180033bddc8e9bdede4879b813695ebcc9e563&mdspid=&spid=699004&netType=0&sid=5910022176&pid=2028597139&timestamp=20251113180033&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=952383261&ParentNodeID=-99&assertID=5910022176&client_ip=106.13.250.90&SecurityKey=20251113180033&promotionId=&mvid=5900006704&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=a962f6b5a1ad63be77f164abe32a2109&ddCalcu=9a09e161222af0263be5baa14a6d16f37b7e
+南方影视,http://gslbmgsplive.miguvideo.com/wd_r1/2018/nfmedia/nfys/1000/index.m3u8?msisdn=20251113180033a687e5b8f3394fbca4964a0701251ad4&mdspid=&spid=699054&netType=0&sid=2206173738&pid=2028597139&timestamp=20251113180033&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=614961829&ParentNodeID=-99&assertID=2206173738&client_ip=106.13.250.90&SecurityKey=20251113180033&promotionId=&mvid=2206173738&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=db43360298b20c4404f3ed9243c0db05&ddCalcu=5d0beb41d34030c630422998dbe230fc4404
 
 地方频道,#genre#
 江苏新闻,http://jinhu-tv-hls.cm.jstv.com/jinhu-tv/jinhuzh.m3u8?zjiangsd
@@ -453,7 +453,7 @@ DJ音乐3,https://vd4.bdstatic.com/mda-nda2b774z37ig4yh/480p/h264_delogo/1649641
 DJ音乐3,https://vd2.bdstatic.com/mda-nde1zha2ickju5ui/480p/h264_delogo/1649986202699266753/mda-nde1zha2ickju5ui.mp4
 DJ音乐3,https://vd2.bdstatic.com/mda-nde83jtsrx9345ai/480p/h264_delogo/1650001792789333244/mda-nde83jtsrx9345ai.mp4
 DJ音乐3,https://vd3.bdstatic.com/mda-ndd9pwn5djrh80tn/480p/h264_delogo/1649919370531344965/mda-ndd9pwn5djrh80tn.mp4
-熊猫频道,http://gslbmgsplive.miguvideo.com/wd_r1/2018/nfmedia/nfys/1000/index.m3u8
+熊猫频道,http://gslbmgsplive.miguvideo.com/envivo_x/2018/SD/xiongmao01/1000/index.m3u8?msisdn=20251113180034ec4f2566deed4d1a8ef626404b41f420&mdspid=&spid=699004&netType=0&sid=2200200699&pid=2028597139&timestamp=20251113180034&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=608933610&ParentNodeID=-99&assertID=2200200699&client_ip=106.13.250.90&SecurityKey=20251113180034&promotionId=&mvid=2200200699&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=97c0d6017d2daec9767c9307133a2b86&ddCalcu=6987ebc1208ad0363011770d329dca7e6c79
 
 动漫频道,#genre#
 金鹰卡通,https://zby.130519.xyz/PLTV/11/224/3221226094/index.m3u8
