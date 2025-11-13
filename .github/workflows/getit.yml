@@ -97,40 +97,47 @@ jobs:
         run: |
           touch output/userresult.txt
           temp_file=$(mktemp)
-          
+    
+          # 设置trap确保脚本退出时清理临时文件
+          cleanup() {
+          if [ -f "$temp_file" ]; then
+            rm -f "$temp_file"
+            echo "临时文件已清理"
+          fi
+          }
+          trap cleanup EXIT ERR INT TERM
+    
           while IFS= read -r line; do
             if [ -n "$line" ]; then
-            # 提取频道名称（逗号前的部分）
-              channel_name=$(echo "$line" | cut -d',' -f1)
-              new_url=$(echo "$line" | cut -d',' -f2)
-              echo "处理频道: $channel_name"
-              found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
-      
+            channel_name=$(echo "$line" | cut -d',' -f1)
+            new_url=$(echo "$line" | cut -d',' -f2)
+            echo "处理频道: $channel_name"
+            found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
+        
               if [ -n "$found_line" ]; then
-              # 找到相同频道，获取行号和完整内容
                 line_num=$(echo "$found_line" | cut -d':' -f1)
                 original_line=$(echo "$found_line" | cut -d':' -f2-)
                 original_url=$(echo "$original_line" | cut -d',' -f2)
-            
-                # 检查原频道地址是否以指定域名开头
-                  if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                  # 替换该行内容
-                    sed -i "${line_num}s|.*|$line|" "output/userresult.txt"
-                    echo "替换"
-                  else
-                  # 原URL不以指定域名开头，添加
-                  # sed -i "${line_num}i\\$line" "output/userresult.txt"
-                    echo "新增"
-                  fi
+          
+                # 使用临时文件进行sed操作，避免直接修改原文件
+              if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
+                cp "output/userresult.txt" "$temp_file"
+                sed "${line_num}s|.*|$line|" "$temp_file" > "output/userresult.txt"
+                echo "替换"
               else
-              # 没有找到相同频道，跳过 
-                echo "⏭️ 跳过频道"
+                cp "output/userresult.txt" "$temp_file"
+                sed "${line_num}i\\$line" "$temp_file" > "output/userresult.txt"
+                echo "新增"
               fi
-                echo "---"
+          else
+              echo "⏭️ 跳过频道"
+          fi
+          echo "---"
           fi
           done < "output/remote.txt"
-          
-          trap 'rm -f "$temp_file"
+    
+          # 显式执行清理，确保万无一失
+          cleanup
 
       - name: COMMIT THE CHANGES
         run: |
