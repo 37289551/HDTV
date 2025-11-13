@@ -95,24 +95,17 @@ jobs:
       - name: ADD TO OUTPUT
         id: update
         run: |
-          # 确保userresult.txt文件存在
           touch output/userresult.txt
-          
-          # 创建临时文件用于处理
           temp_file=$(mktemp)
           
-          # 读取remote.txt中的每一行
           while IFS= read -r line; do
             if [ -n "$line" ]; then
             # 提取频道名称（逗号前的部分）
               channel_name=$(echo "$line" | cut -d',' -f1)
               new_url=$(echo "$line" | cut -d',' -f2)
-        
               echo "处理频道: $channel_name"
-              echo "新URL: $new_url"
-              # 在userresult.txt中查找相同频道
               found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
-        
+      
               if [ -n "$found_line" ]; then
               # 找到相同频道，获取行号和完整内容
                 line_num=$(echo "$found_line" | cut -d':' -f1)
@@ -123,15 +116,15 @@ jobs:
                   if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
                   # 替换该行内容
                     sed -i "${line_num}s|.*|$line|" "output/userresult.txt"
-                    echo "✅ 替换频道: $channel_name (原URL匹配指定域名)"
+                    echo "✅ 替换"
                     else
                   # 原URL不以指定域名开头，添加
                       sed -i "${line_num}i\\$line" "output/userresult.txt"
-                      echo "✅ 新增频道到前面: $channel_name (位置: $line_num)"
+                      echo "✅ 新增"
                   fi
               else
               # 没有找到相同频道，跳过
-                echo "⏭️ 跳过频道: $channel_name (无匹配频道)"
+                echo "⏭️ 跳过频道"
               fi
                 echo "---"
           fi
