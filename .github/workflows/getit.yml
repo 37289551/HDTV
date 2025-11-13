@@ -17,10 +17,6 @@ jobs:
 
       - name: CREATE DIR
         run: mkdir -p output
-        
-      - name: CLEAN EXISTING
-        run: |
-          > output/remote.txt
 
       - name: Check trigger type
         id: check_trigger
@@ -53,7 +49,7 @@ jobs:
       - name: DOWNLOAD
         if: steps.check_trigger.outputs.should_execute == 'true' || steps.hour_check.outputs.is_even_hour == 'true'
         run: |
-          > output/remote.txt
+          > output/remote.txt>
           # DOWNLOAD & FORMATING
           curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
           awk -F',' '/^#EXTINF:/ { 
