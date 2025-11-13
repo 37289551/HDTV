@@ -33,6 +33,7 @@ jobs:
             echo "should_execute=false" >> $GITHUB_OUTPUT
           fi    
       - name: Wait for even hour
+        id: hour_check
         if: steps.check_trigger.outputs.should_execute == 'false'
         run: |
           while true; do
@@ -101,7 +102,8 @@ jobs:
           while IFS= read -r line; do
               if [ -n "$line" ]; then
                   channel_name=$(echo "$line" | cut -d',' -f1)
-                  found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
+                  # use fixed-string grep and include beginning-of-line anchor
+                  found_line=$(grep -Fn "^${channel_name}," "output/userresult.txt" | head -n 1)
                   
                   if [ -n "$found_line" ]; then
                       line_num=$(echo "$found_line" | cut -d':' -f1)
@@ -110,8 +112,8 @@ jobs:
                       
                       # 条件性替换：仅替换特定URL模式的频道
                       if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          # 使用sed进行原地替换
-                          sed -i "${line_num}s|.*|$line|" "output/userresult.txt"
+                          # use awk to safely replace the whole line at line_num
+                          awk -v ln="$line_num" -v new="$line" 'NR==ln{$0=new} {print}' "output/userresult.txt" > "$temp_file" && mv "$temp_file" "output/userresult.txt"
                           echo "✅ 替换频道: $channel_name (旧URL: $original_url)"
                       else
                           echo "⏭️  跳过频道: $channel_name (URL无需替换)"
@@ -119,6 +121,7 @@ jobs:
                   else
                       echo "❌ 频道不存在: $channel_name，跳过"
                   fi
+              fi
           done < "output/remote.txt"
           
           echo "================================"
