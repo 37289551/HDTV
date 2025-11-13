@@ -1,8 +1,8 @@
 name: Sync Handle
 on:
   schedule:
-    - cron: '59 1-23/2 * * *'  # 每2小时执行一次
-  workflow_dispatch:  # 支持手动触发
+    - cron: '57 1-23/2 * * *'  #  
+  workflow_dispatch:  #  
 
 jobs:
   convert-m3u:
@@ -15,26 +15,50 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 创建输出目录
+      - name: CREAT DIR
         run: mkdir -p output
-
-      - name: 清除原有内容
+        
+      - name: CLEAN EXISTING
         run: |
-          # 清空或重新创建remote.txt文件
           > output/remote.txt
 
-      - name: 下载并转换M3U文件
+      - name: Check trigger type
+        id: check_trigger
         run: |
-          # 下载远程M3U文件
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual force to run!"
+            echo "should_execute=true" >> $GITHUB_OUTPUT
+          else
+            echo "Auto trigger, check time!"
+            echo "should_execute=false" >> $GITHUB_OUTPUT
+          fi    
+      - name: Wait for even hour
+        if: steps.check_trigger.outputs.should_execute == 'false'
+        run: |
+          while true; do
+            CURRENT_HOUR_UTC=$(date -u +%H)
+            echo "Current UTC hour: $CURRENT_HOUR_UTC"
+            
+            if [ $((CURRENT_HOUR_UTC % 2)) -eq 0 ]; then
+              echo "Even hour detected, continuing execution"
+              echo "is_even_hour=true" >> $GITHUB_OUTPUT
+              break
+            else
+              echo "Odd hour, waiting 30 seconds..."
+              sleep 30
+            fi
+          done
+
+      - name: DOWNLOAD
+        if: steps.hour_check.outputs.is_even_hour == 'true'
+        run: |
+          # DOWNLOAD & FORMATING
           curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
-          
-          # 转换M3U格式并应用频道名称映射
           awk -F',' '/^#EXTINF:/ { 
               gsub(/^#EXTINF:.*,/, ""); 
               channel_name = $0; 
               getline; 
               if ($0 !~ /^#/) {
-                  # 应用频道名称映射转换
                   gsub(/CCTV1综合/, "CCTV-1", channel_name);
                   gsub(/CCTV2财经/, "CCTV-2", channel_name);
                   gsub(/CCTV3综艺/, "CCTV-3", channel_name);
@@ -64,64 +88,47 @@ jobs:
               }
           }' input.m3u
 
-      - name: 智能合并频道到userresult.txt
+      - name: ADD TO OUTPUT
         run: |
-          # 确保userresult.txt文件存在
+          #CHECK FILE
           touch output/userresult.txt
-          
-          # 创建临时文件用于处理
           temp_file=$(mktemp)
-          
-          # 读取remote.txt中的每一行
           while IFS= read -r line; do
               if [ -n "$line" ]; then
-                  # 提取频道名称（逗号前的部分）
                   channel_name=$(echo "$line" | cut -d',' -f1)
-                  
-                  # 在userresult.txt中查找第一个相同频道
                   found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
                   
                   if [ -n "$found_line" ]; then
-                      # 找到相同频道，获取行号和完整内容
                       line_num=$(echo "$found_line" | cut -d':' -f1)
                       original_line=$(echo "$found_line" | cut -d':' -f2-)
-                      
-                      # 检查原频道地址是否以指定域名开头
                       original_url=$(echo "$original_line" | cut -d',' -f2)
                       if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          # 删除原频道
                           sed -i "${line_num}d" "output/userresult.txt"
-                          echo "删除原频道 $channel_name (域名匹配)"
+                          echo "Delete $channel_name (old exist)"
                       fi
-                      
-                      # 重新查找插入位置（因为可能删除了行）
                       new_found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
                       if [ -n "$new_found_line" ]; then
-                          # 找到新的相同频道位置
                           new_line_num=$(echo "$new_found_line" | cut -d':' -f1)
                           sed -i "${new_line_num}i\\$line" "output/userresult.txt"
-                          echo "在行号 $new_line_num 前插入频道 $channel_name"
+                          echo "Add before $new_line_num CH $channel_name"
                       else
-                          # 没有找到相同频道，添加到文件末尾
                           echo "$line" >> "output/userresult.txt"
-                          echo "添加频道 $channel_name 到文件末尾"
+                          echo "add CH $channel_name in the file end"
                       fi
                   else
-                      # 没有找到相同频道，不添加
-                      echo "频道 $channel_name 未在userresult.txt中找到，跳过添加"
+                      echo "CH $channel_name not exist in userresult.txt，skip"
                   fi
               fi
           done < "output/remote.txt"
-          
-          # 清理临时文件
+        
           rm -f "$temp_file"
 
-      - name: 提交转换结果
+      - name: COMMIT THE CHANGES
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add output/
-          git diff --staged --quiet || git commit -m "自动更新: M3U频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
+          git diff --staged --quiet || git commit -m "UPdated: CH List $(date +'%Y-%m-%d %H:%M:%S')"
           git push
 
 
@@ -138,8 +145,8 @@ jobs:
       - name: Download files
         run: |
           curl -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
-          curl -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
-          curl -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
+          # curl -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
+          # curl -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
 
       - name: Clone Gitee Repo
         env:
@@ -156,8 +163,9 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git checkout master || git checkout -b master
           cp ../IPV4.txt ./
-          cp ../IPV6.txt ./
-          cp ../IPV4.m3u ./
-          git add IPV4.txt IPV6.txt IPV4.m3u
+          # cp ../IPV6.txt ./
+          # cp ../IPV4.m3u ./
+          git add IPV4.txt 
+          # add to above line IPV6.txt IPV4.m3u
           git commit -m "Sync from GitHub" || exit 0
           git push origin master
