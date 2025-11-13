@@ -91,9 +91,13 @@ jobs:
 
       - name: ADD TO OUTPUT
         run: |
-          #CHECK FILE
+          # CHECK FILE
           touch output/userresult.txt
           temp_file=$(mktemp)
+          
+          echo "开始处理频道信息更新..."
+          echo "================================"
+          
           while IFS= read -r line; do
               if [ -n "$line" ]; then
                   channel_name=$(echo "$line" | cut -d',' -f1)
@@ -103,25 +107,23 @@ jobs:
                       line_num=$(echo "$found_line" | cut -d':' -f1)
                       original_line=$(echo "$found_line" | cut -d':' -f2-)
                       original_url=$(echo "$original_line" | cut -d',' -f2)
+                      
+                      # 条件性替换：仅替换特定URL模式的频道
                       if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                          sed -i "${line_num}d" "output/userresult.txt"
-                          echo "Delete $channel_name (old exist)"
-                      fi
-                      new_found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
-                      if [ -n "$new_found_line" ]; then
-                          new_line_num=$(echo "$new_found_line" | cut -d':' -f1)
-                          sed -i "${new_line_num}i\\$line" "output/userresult.txt"
-                          echo "Add before $new_line_num CH $channel_name"
+                          # 使用sed进行原地替换
+                          sed -i "${line_num}s|.*|$line|" "output/userresult.txt"
+                          echo "✅ 替换频道: $channel_name (旧URL: $original_url)"
                       else
-                          echo "$line" >> "output/userresult.txt"
-                          echo "add CH $channel_name in the file end"
+                          echo "⏭️  跳过频道: $channel_name (URL无需替换)"
                       fi
                   else
-                      echo "CH $channel_name not exist in userresult.txt，skip"
+                      echo "❌ 频道不存在: $channel_name，跳过"
                   fi
-              fi
           done < "output/remote.txt"
-        
+          
+          echo "================================"
+          echo "频道信息更新完成！"
+          
           rm -f "$temp_file"
 
       - name: COMMIT THE CHANGES
