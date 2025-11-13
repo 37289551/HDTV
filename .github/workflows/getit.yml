@@ -48,10 +48,11 @@ jobs:
               sleep 30
             fi
           done
-
+          
       - name: DOWNLOAD
-        if: steps.hour_check.outputs.is_even_hour == 'true'
+        if: steps.check_trigger.outputs.should_execute == 'true' || steps.hour_check.outputs.is_even_hour == 'true'
         run: |
+          > output/remote.txt
           # DOWNLOAD & FORMATING
           curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
           awk -F',' '/^#EXTINF:/ { 
