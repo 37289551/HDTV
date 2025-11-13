@@ -85,6 +85,7 @@ jobs:
                   gsub(/抗战经典影片/, "抗战影片", channel_name);
                   gsub(/CHC影迷电影/, "CHC影院", channel_name);
                   gsub(/和美乡途轮播台/, "经典影片", channel_name);
+                  gsub(/新片放映厅/, "新片放映", channel_name);
                   
                   print channel_name "," $0 >> "output/remote.txt"
               }
