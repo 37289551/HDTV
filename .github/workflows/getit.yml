@@ -140,18 +140,19 @@ jobs:
             
               # 检查匹配的频道URL是否以https://gstdtree开头
               if [[ "$matching_url" == http://gslbmgsplive* ]]; then
-                echo "  → gstdtree频道: 添加后删除原有频道"
-              
-                # 在匹配行前添加remote_channel
-                sed -i "${line_num}i$remote_channel" "$temp_result"
-              
-                # 删除原有的gstdtree频道
-                sed -i "${line_num}d" "$temp_result"
-              else
-                echo "  → 普通频道: 添加到匹配频道前"
-                # 在匹配行前添加remote_channel
-                sed -i "${line_num}i$remote_channel" "$temp_result"
-              fi
+                 echo "  → gstdtree频道: 添加后删除原有频道"
+                  # 在匹配行前添加remote_channel
+          	     sed "${line_num}i$remote_channel" "$temp_result" > "$temp_result.tmp"
+                 mv "$temp_result.tmp" "$temp_result"
+         	       # 删除原有的gstdtree频道
+                 sed "${line_num}d" "$temp_result" > "$temp_result.tmp"
+         	       mv "$temp_result.tmp" "$temp_result"
+       	     else
+        	       echo "  → 普通频道: 添加到匹配频道前"
+         	       # 在匹配行前添加remote_channel
+         	       sed "${line_num}i$remote_channel" "$temp_result" > "$temp_result.tmp"
+          	     mv "$temp_result.tmp" "$temp_result"
+            	fi
             else
               echo "未找到匹配频道: $remote_name，跳过"
             fi
