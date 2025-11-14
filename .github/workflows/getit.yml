@@ -98,8 +98,8 @@ jobs:
         
           # 检查文件是否存在
           if [[ ! -f "output/remote.txt" ]]; then
-            echo "错误: output/remote.txt 文件未找到"
-            exit 1
+          echo "错误: output/remote.txt 文件未找到"
+          exit 1
           fi
 
           if [[ ! -f "output/userresult.txt" ]]; then
@@ -138,13 +138,14 @@ jobs:
               # 提取匹配频道的URL地址
               matching_url=$(echo "$matching_channel" | cut -d',' -f2- | tr -d '\r')
             
-              # 检查匹配的频道URL是否以https://gstdtree开头
+              # 检查匹配的频道URL是否以http://gslbmgsplive开头
               if [[ "$matching_url" == http://gslbmgsplive* ]]; then
-                 echo "  → gstdtree频道: 添加后删除原有频道"
-              # 在匹配行前添加remote_channel
+                echo "  → 频道: 添加后删除原有频道"
+              
+                # 在匹配行前添加remote_channel
                 sed "${line_num}i$remote_channel" "$temp_result" > "$temp_result.tmp"
                 mv "$temp_result.tmp" "$temp_result"
-          
+              
                 # 删除原有的gstdtree频道
                 sed "${line_num}d" "$temp_result" > "$temp_result.tmp"
                 mv "$temp_result.tmp" "$temp_result"
@@ -152,8 +153,8 @@ jobs:
                 echo "  → 普通频道: 添加到匹配频道前"
                 # 在匹配行前添加remote_channel
                 sed "${line_num}i$remote_channel" "$temp_result" > "$temp_result.tmp"
-                 mv "$temp_result.tmp" "$temp_result"
-            	fi
+                mv "$temp_result.tmp" "$temp_result"
+              fi
             else
               echo "未找到匹配频道: $remote_name，跳过"
             fi
