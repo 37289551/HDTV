@@ -7,57 +7,38 @@ on:
 jobs:
   convert-m3u:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: CREATE DIR
+      - name: 创建输出目录
         run: mkdir -p output
 
-      - name: Check trigger type
-        id: check_trigger
+      - name: 下载M3U文件
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual force to run!"
-            echo "should_execute=true" >> $GITHUB_OUTPUT
-          else
-            echo "Auto trigger, check time!"
-            echo "should_execute=false" >> $GITHUB_OUTPUT
-          fi    
-      - name: Wait for even hour
-        id: hour_check
-        if: steps.check_trigger.outputs.should_execute == 'false'
-        run: |
-          while true; do
-            CURRENT_HOUR_UTC=$(date -u +%H)
-            echo "Current UTC hour: $CURRENT_HOUR_UTC"
-            # 移除前导零
-            HOUR_WITHOUT_ZERO=${CURRENT_HOUR_UTC##*0}
-            if [ $((HOUR_WITHOUT_ZERO % 2)) -eq 0 ]; then
-              echo "Even hour detected, continuing execution"
-              echo "is_even_hour=true" >> $GITHUB_OUTPUT
-              break
-            else
-              echo "Odd hour, waiting 30 seconds..."
-              sleep 30
-            fi
-          done
-          
-      - name: DOWNLOAD
-        if: steps.check_trigger.outputs.should_execute == 'true' || steps.hour_check.outputs.is_even_hour == 'true'
-        run: |
-          > output/remote.txt
-          # DOWNLOAD & FORMATING
           curl -s "https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt" -o input.m3u
-          awk -F',' '/^#EXTINF:/ { 
-              gsub(/^#EXTINF:.*,/, ""); 
-              channel_name = $0; 
-              getline; 
+          echo "下载完成，文件大小: $(wc -l < input.m3u) 行"
+
+      - name: 转换M3U文件
+        run: |
+          echo "开始转换M3U文件..."
+          # 清空或创建remote.txt
+          > output/remote.txt
+          
+          # 使用awk处理M3U格式
+          awk -F',' '
+          /^#EXTINF:/ {
+              extinf = $0;
+              getline;
               if ($0 !~ /^#/) {
+                  # 提取频道名称并清理
+                  channel_name = extinf;
+                  gsub(/^#EXTINF:[0-9]+,/, "", channel_name);
+                  gsub(/^[[:space:]]+|[[:space:]]+$/, "", channel_name);
+                  
+                  # 标准化频道名称
                   gsub(/CCTV1综合/, "CCTV-1", channel_name);
                   gsub(/CCTV2财经/, "CCTV-2", channel_name);
                   gsub(/CCTV3综艺/, "CCTV-3", channel_name);
@@ -87,55 +68,72 @@ jobs:
                   gsub(/CHC影迷电影/, "CHC影院", channel_name);
                   gsub(/和美乡途轮播台/, "经典影片", channel_name);
                   gsub(/新片放映厅/, "新片放映", channel_name);
+
                   
-                  print channel_name "," $0 >> "output/remote.txt"
+                  url = $0;
+                  gsub(/^[[:space:]]+|[[:space:]]+$/, "", url);
+                  
+                  if (channel_name != "" && url != "") {
+                      print channel_name "," url >> "output/remote.txt"
+                  }
               }
           }' input.m3u
-
-      - name: 智能合并频道到userresult.txt
-        run: |
-          touch output/userresult.txt
-          temp_file=$(mktemp)
-  
-          while IFS= read -r line; do
-            if [ -n "$line" ]; then
-              channel_name=$(echo "$line" | cut -d',' -f1)
-              new_url=$(echo "$line" | cut -d',' -f2)
-              found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
           
-              if [ -n "$found_line" ]; then
-                  line_num=$(echo "$found_line" | cut -d':' -f1)
-                  original_line=$(echo "$found_line" | cut -d':' -f2-)
-                  original_url=$(echo "$original_line" | cut -d',' -f2)
-              
-                  # 判断URL类型并相应处理
-                  if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                    # 替换miguvideo域名的频道
-                    sed -i "${line_num}s|.*|$line|" "output/userresult.txt"
-                    echo "替换频道: $channel_name (miguvideo域名)"
+          echo "转换完成，remote.txt行数: $(wc -l < output/remote.txt)"
+
+      - name: 智能合并到userresult.txt
+        run: |
+          echo "开始智能合并..."
+          
+          # 确保userresult.txt存在
+          touch output/userresult.txt
+          
+          # 创建临时文件
+          temp_file=$(mktemp)
+          cp output/userresult.txt "$temp_file"
+          
+          # 处理remote.txt中的每一行
+          while IFS= read -r line; do
+              if [ -n "$line" ]; then
+                  channel_name=$(echo "$line" | cut -d',' -f1)
+                  new_url=$(echo "$line" | cut -d',' -f2)
+                  
+                  # 在userresult.txt中查找相同频道
+                  found_line=$(grep -n "^$channel_name," "$temp_file" | head -1)
+                  
+                  if [ -n "$found_line" ]; then
+                      line_num=$(echo "$found_line" | cut -d':' -f1)
+                      original_line=$(echo "$found_line" | cut -d':' -f2-)
+                      original_url=$(echo "$original_line" | cut -d',' -f2)
+                      
+                      # 检查URL是否以目标域名开头
+                      if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
+                          # 整行替换 - 使用精确的sed命令
+                          sed -i "${line_num}c\\$line" "$temp_file"
+                          echo "替换频道: $channel_name"
+                      else
+                          # 在原有频道前插入新频道
+                          sed -i "${line_num}i\\$line" "$temp_file"
+                          echo "插入频道: $channel_name (在原有频道前)"
+                      fi
                   else
-                    # 在其他频道前插入新频道
-                    sed -i "${line_num}i\\$line" "output/userresult.txt"
-                    echo "插入频道: $channel_name (在原有频道前)"
+                      echo "跳过频道: $channel_name (无重复)"
                   fi
-              else
-                # 无重复频道，跳过处理
-                  echo "跳过频道: $channel_name (无重复)"
               fi
-          fi
           done < "output/remote.txt"
           
-          rm -f "$temp_file"
+          # 更新userresult.txt
+          mv "$temp_file" output/userresult.txt
+          echo "合并完成，userresult.txt行数: $(wc -l < output/userresult.txt)"
 
-      - name: 提交转换结果
+      - name: 提交更改
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add output/remote.txt output/userresult.txt
-          git diff --staged --quiet || git commit -m "自动更新频道清单 [skip ci]"
+          git add output/
+          git diff --staged --quiet || git commit -m "自动更新频道列表 $(date '+%Y-%m-%d %H:%M:%S')"
           git push
-
-
+          
   sync-to-gitee:
     runs-on: ubuntu-latest
     needs: convert-m3u 
