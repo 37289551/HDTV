@@ -92,94 +92,49 @@ jobs:
               }
           }' input.m3u
 
-      - name: ADD TO OUTPUT
+      - name: 智能合并频道到userresult.txt
         run: |
-          echo "开始合并频道列表..."
-        
-          # 检查文件是否存在
-          if [[ ! -f "output/remote.txt" ]]; then
-          echo "错误: output/remote.txt 文件未找到"
-          exit 1
-          fi
-
-          if [[ ! -f "output/userresult.txt" ]]; then
-            echo "错误: output/userresult.txt 文件未找到"
-            exit 1
-          fi
-
-          # 创建备份
-          cp output/userresult.txt output/userresult.txt.backup
-        
-          # 处理频道合并
-          temp_result=$(mktemp)
-          processed=false
-        
-          # 读取userresult.txt到临时结果文件
-          cp output/userresult.txt "$temp_result"
-        
-          # 读取remote.txt中的频道
-          while IFS= read -r remote_channel; do
-            [[ -z "$remote_channel" ]] && continue
+          touch output/userresult.txt
+          temp_file=$(mktemp)
+  
+          while IFS= read -r line; do
+            if [ -n "$line" ]; then
+              channel_name=$(echo "$line" | cut -d',' -f1)
+              new_url=$(echo "$line" | cut -d',' -f2)
+              found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
           
-            # 提取频道名称（第一个逗号前的部分）
-            remote_name=$(echo "$remote_channel" | cut -d',' -f1 | tr -d '\r')
-          
-            # 在userresult.txt中查找相同名称的频道
-            matching_line=$(grep -n "^$remote_name," "$temp_result" | head -1)
-          
-            if [[ -n "$matching_line" ]]; then
-              processed=true
-              echo "找到匹配频道: $remote_name"
-            
-              # 获取匹配的行号和内容
-              line_num=$(echo "$matching_line" | cut -d: -f1)
-              matching_channel=$(echo "$matching_line" | cut -d: -f2-)
-            
-              # 提取匹配频道的URL地址
-              matching_url=$(echo "$matching_channel" | cut -d',' -f2- | tr -d '\r')
-            
-              # 检查匹配的频道URL是否以http://gslbmgsplive开头
-              if [[ "$matching_url" == http://gslbmgsplive* ]]; then
-                echo "  → 频道: 添加后删除原有频道"
+              if [ -n "$found_line" ]; then
+                  line_num=$(echo "$found_line" | cut -d':' -f1)
+                  original_line=$(echo "$found_line" | cut -d':' -f2-)
+                  original_url=$(echo "$original_line" | cut -d',' -f2)
               
-                # 在匹配行前添加remote_channel
-                sed "${line_num}i$remote_channel" "$temp_result" > "$temp_result.tmp"
-                mv "$temp_result.tmp" "$temp_result"
-              
-                # 删除原有的gstdtree频道
-                sed "${line_num}d" "$temp_result" > "$temp_result.tmp"
-                mv "$temp_result.tmp" "$temp_result"
+                  # 判断URL类型并相应处理
+                  if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
+                    # 替换miguvideo域名的频道
+                    sed -i "${line_num}s|.*|$line|" "output/userresult.txt"
+                    echo "替换频道: $channel_name (miguvideo域名)"
+                  else
+                    # 在其他频道前插入新频道
+                    sed -i "${line_num}i\\$line" "output/userresult.txt"
+                    echo "插入频道: $channel_name (在原有频道前)"
+                  fi
               else
-                echo "  → 普通频道: 添加到匹配频道前"
-                # 在匹配行前添加remote_channel
-                sed "${line_num}i$remote_channel" "$temp_result" > "$temp_result.tmp"
-                mv "$temp_result.tmp" "$temp_result"
+                # 无重复频道，跳过处理
+                  echo "跳过频道: $channel_name (无重复)"
               fi
-            else
-              echo "未找到匹配频道: $remote_name，跳过"
-            fi
-          
-          done < "output/remote.txt"
-
-          # 移动处理结果到userresult.txt
-          mv "$temp_result" output/userresult.txt
-        
-          echo "频道合并完成"
-          echo "处理前行数: $(wc -l < output/userresult.txt.backup)"
-          echo "处理后行数: $(wc -l < output/userresult.txt)"
-          
-      - name: Commit changes
-        if: success()
-        run: |
-          if git diff --quiet output/userresult.txt; then
-            echo "文件未发生更改，无需提交"
-          else
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add output/userresult.txt
-            git commit -m "自动合并频道列表：根据频道名称匹配更新"
-            git push
           fi
+          done < "output/remote.txt"
+          
+          rm -f "$temp_file"
+
+      - name: 提交转换结果
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add output/remote.txt output/userresult.txt
+          git diff --staged --quiet || git commit -m "自动更新频道清单 [skip ci]"
+          git push
+
 
   sync-to-gitee:
     runs-on: ubuntu-latest
