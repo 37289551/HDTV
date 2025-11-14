@@ -167,14 +167,18 @@ jobs:
           echo "处理前行数: $(wc -l < output/userresult.txt.backup)"
           echo "处理后行数: $(wc -l < output/userresult.txt)"
           
-      - name: COMMIT THE CHANGES
+      - name: Commit changes
+        if: success()
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add output/
-          git diff --staged --quiet || git commit -m "UPdated: CH List $(date +'%Y-%m-%d %H:%M:%S')"
-          git push
-
+          if git diff --quiet output/userresult.txt; then
+            echo "文件未发生更改，无需提交"
+          else
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add output/userresult.txt
+            git commit -m "自动合并频道列表：根据频道名称匹配更新"
+            git push
+          fi
 
   sync-to-gitee:
     runs-on: ubuntu-latest
