@@ -93,52 +93,77 @@ jobs:
           }' input.m3u
 
       - name: ADD TO OUTPUT
-        id: update
         run: |
-          touch output/userresult.txt
-          temp_file=$(mktemp)
-    
-          # 设置trap确保脚本退出时清理临时文件
-          cleanup() {
-          if [ -f "$temp_file" ]; then
-            rm -f "$temp_file"
-            echo "临时文件已清理"
-          fi
-          }
-          trap cleanup EXIT ERR INT TERM
-    
-          while IFS= read -r line; do
-            if [ -n "$line" ]; then
-            channel_name=$(echo "$line" | cut -d',' -f1)
-            new_url=$(echo "$line" | cut -d',' -f2)
-            echo "处理频道: $channel_name"
-            found_line=$(grep -n "^$channel_name," "output/userresult.txt" | head -1)
+          echo "开始合并频道列表..."
         
-              if [ -n "$found_line" ]; then
-                line_num=$(echo "$found_line" | cut -d':' -f1)
-                original_line=$(echo "$found_line" | cut -d':' -f2-)
-                original_url=$(echo "$original_line" | cut -d',' -f2)
-          
-                # 使用临时文件进行sed操作，避免直接修改原文件
-              if [[ "$original_url" == http://gslbmgsplive.miguvideo.com* ]]; then
-                cp "output/userresult.txt" "$temp_file"
-                sed "${line_num}s|.*|$line|" "$temp_file" > "output/userresult.txt"
-                echo "替换"
-              else
-                cp "output/userresult.txt" "$temp_file"
-                sed "${line_num}i\\$line" "$temp_file" > "output/userresult.txt"
-                echo "新增"
-              fi
-          else
-              echo "⏭️ 跳过频道"
+          # 检查文件是否存在
+          if [[ ! -f "output/remote.txt" ]]; then
+            echo "错误: output/remote.txt 文件未找到"
+            exit 1
           fi
-          echo "---"
-          fi
-          done < "output/remote.txt"
-    
-          # 显式执行清理，确保万无一失
-          cleanup
 
+          if [[ ! -f "output/userresult.txt" ]]; then
+            echo "错误: output/userresult.txt 文件未找到"
+            exit 1
+          fi
+
+          # 创建userresult.txt的备份
+          cp output/userresult.txt output/userresult.txt.backup
+        
+          # 创建临时工作文件
+          temp_file=$(mktemp)
+          temp_result=$(mktemp)
+        
+          # 读取userresult.txt到临时结果文件
+          cp output/userresult.txt "$temp_result"
+        
+          # 读取remote.txt中的频道
+          while IFS= read -r remote_channel; do
+            [[ -z "$remote_channel" ]] && continue
+          
+            # 提取频道名称（最后一个/后的内容）
+            remote_name=$(echo "$remote_channel" | awk -F'/' '{print $NF}' | tr -d '\r')
+          
+            # 在userresult.txt中查找相同名称的频道
+            matching_line=$(grep -n "/$remote_name$" "$temp_result" | head -1)
+          
+            if [[ -n "$matching_line" ]]; then
+              echo "找到匹配频道: $remote_name"
+            
+              # 获取匹配的行号和内容
+              line_num=$(echo "$matching_line" | cut -d: -f1)
+              matching_channel=$(echo "$matching_line" | cut -d: -f2-)
+            
+              # 检查匹配的频道是否以https://gstdtree开头
+              if [[ "$matching_channel" == https://gstdtree* ]]; then
+                echo "  → gstdtree频道: 添加后删除原有频道"
+              
+                # 在匹配行前添加remote_channel
+                sed -i "${line_num}i$remote_channel" "$temp_result"
+              
+                # 删除原有的gstdtree频道
+                sed -i "${line_num}d" "$temp_result"
+              else
+                echo "  → 普通频道: 添加到匹配频道前"
+                # 在匹配行前添加remote_channel
+                sed -i "${line_num}i$remote_channel" "$temp_result"
+              fi
+            else
+              echo "未找到匹配频道: $remote_name，跳过"
+            fi
+          
+          done < "output/remote.txt"
+
+          # 移动处理结果到userresult.txt
+          mv "$temp_result" output/userresult.txt
+        
+          # 清理临时文件
+          rm -f "$temp_file"
+        
+          echo "频道合并完成"
+          echo "处理前行数: $(wc -l < output/userresult.txt.backup)"
+          echo "处理后行数: $(wc -l < output/userresult.txt)"
+          
       - name: COMMIT THE CHANGES
         run: |
           git config --local user.email "action@github.com"
