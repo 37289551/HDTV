@@ -107,12 +107,12 @@ jobs:
             exit 1
           fi
 
-          # 创建userresult.txt的备份
+          # 创建备份
           cp output/userresult.txt output/userresult.txt.backup
         
-          # 创建临时工作文件
-          temp_file=$(mktemp)
+          # 处理频道合并
           temp_result=$(mktemp)
+          processed=false
         
           # 读取userresult.txt到临时结果文件
           cp output/userresult.txt "$temp_result"
@@ -121,21 +121,25 @@ jobs:
           while IFS= read -r remote_channel; do
             [[ -z "$remote_channel" ]] && continue
           
-            # 提取频道名称（最后一个/后的内容）
-            remote_name=$(echo "$remote_channel" | awk -F'/' '{print $NF}' | tr -d '\r')
+            # 提取频道名称（第一个逗号前的部分）
+            remote_name=$(echo "$remote_channel" | cut -d',' -f1 | tr -d '\r')
           
             # 在userresult.txt中查找相同名称的频道
-            matching_line=$(grep -n "/$remote_name$" "$temp_result" | head -1)
+            matching_line=$(grep -n "^$remote_name," "$temp_result" | head -1)
           
             if [[ -n "$matching_line" ]]; then
+              processed=true
               echo "找到匹配频道: $remote_name"
             
               # 获取匹配的行号和内容
               line_num=$(echo "$matching_line" | cut -d: -f1)
               matching_channel=$(echo "$matching_line" | cut -d: -f2-)
             
-              # 检查匹配的频道是否以https://gstdtree开头
-              if [[ "$matching_channel" == http://gslbmgsplive.miguvideo.com* ]]; then
+              # 提取匹配频道的URL地址
+              matching_url=$(echo "$matching_channel" | cut -d',' -f2- | tr -d '\r')
+            
+              # 检查匹配的频道URL是否以https://gstdtree开头
+              if [[ "$matching_url" == http://gslbmgsplive* ]]; then
                 echo "  → gstdtree频道: 添加后删除原有频道"
               
                 # 在匹配行前添加remote_channel
@@ -156,9 +160,6 @@ jobs:
 
           # 移动处理结果到userresult.txt
           mv "$temp_result" output/userresult.txt
-        
-          # 清理临时文件
-          rm -f "$temp_file"
         
           echo "频道合并完成"
           echo "处理前行数: $(wc -l < output/userresult.txt.backup)"
