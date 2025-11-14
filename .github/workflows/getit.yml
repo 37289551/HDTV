@@ -135,7 +135,7 @@ jobs:
               matching_channel=$(echo "$matching_line" | cut -d: -f2-)
             
               # 检查匹配的频道是否以https://gstdtree开头
-              if [[ "$matching_channel" == https://gstdtree* ]]; then
+              if [[ "$matching_channel" == http://gslbmgsplive.miguvideo.com* ]]; then
                 echo "  → gstdtree频道: 添加后删除原有频道"
               
                 # 在匹配行前添加remote_channel
