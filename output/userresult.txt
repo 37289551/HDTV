@@ -295,11 +295,6 @@ CCTV美洲,http://120.46.223.160/PHP/MG.php?id=608807416
 云南卫视,http://120.238.94.10:9901/tsfile/live/1069_1.m3u8
 云南卫视,http://112.27.235.94:8000/hls/40/index.m3u8
 云南卫视,http://111.61.236.247:9081/hls/32/index.m3u8
-大湾区卫视,http://gslbmgsplive.miguvideo.com/wd_r3/2018/nfmedia/nfws/1000/index.m3u8?msisdn=20251114200035b0547920c4a14da1934d96690453e333&mdspid=&spid=699054&netType=0&sid=2200322852&pid=2028597139&timestamp=20251114200035&Channel_ID=0116_2600000900-99000-201600010010027&ProgramID=608917627&ParentNodeID=-99&assertID=2200322852&client_ip=106.13.250.88&SecurityKey=20251114200035&promotionId=&mvid=2200322852&mcid=500020&playurlVersion=WX-A1-8.10.1-RELEASE&userid=&jmhm=&videocodec=h264&bean=mgspad&tid=android&conFee=0&puData=501b630ae0dc2adcc94c2846e4952eb5&ddCalcu=55b0ee112b85609340ea6e408d2cc24a9dcc
-大湾区卫视,http://222.128.55.152:9080/live/dwq.m3u8
-大湾区卫视,http://120.46.223.160/PHP/MG.php?id=608917627
-大湾区卫视,http://183.11.239.36:808/hls/132/index.m3u8
-大湾区卫视,http://gmxw.7766.org:808/hls/132/index.m3u8
 
 特区频道,#genre#
 凤凰中文,http://43.152.143.193:80/1.v.smtcdns.net/tvlive.fengshows.cn/live/0701pcc72.flv
