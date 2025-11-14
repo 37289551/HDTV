@@ -165,7 +165,7 @@ BBC,http://198.16.100.186:8278/bbc2_antik/playlist.m3u8?tid=MABA3261818232618182
 
 影院测试,#genre#
 经典影片,http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8$!
-港片经典,http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8$!
+香港电影,http://gslbmgsplive.miguvideo.com/wd_r2/virtuallive/5100180869/150/index.m3u8$!
 抗战影片,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100002089-150/index.m3u8$!
 新片放映,http://gslbmgsplive.miguvideo.com/wd-virtuallive5100030975-150/index.m3u8$!
 CHC影院,http://gslbmgsplive.miguvideo.com/migu/kailu/chcymdy/51/20250415/index.m3u8$!
@@ -183,8 +183,6 @@ CHC影院,http://gslbmgsplive.miguvideo.com/migu/kailu/chcymdy/51/20250415/index
 阳江综合,http://183.236.161.100:8962/live1173.m3u8$!
 阳江综合,https://live.yjtvw.com:8081/live/yjtv1.m3u8$!
 桂林综合,https://pull.gltvs.com/live/glxw/playlist.m3u8?v=b0528684bf934e120e1c30fc808e6576&t=1796868188$!
-上海纪实,http://iptv.huuc.edu.cn/hls/docuchina.m3u8$!
-金鹰纪实,http://iptv.huuc.edu.cn/hls/gedocu.m3u8$!
 DJ音乐1,https://vd3.bdstatic.com/mda-nda3jnm5kjr0pzkk/480p/h264_delogo/1649645090089685317/mda-nda3jnm5kjr0pzkk.mp4$!
 DJ音乐1,https://vd4.bdstatic.com/mda-ndc2akp3ve971zsx/480p/h264_delogo/1649813962979142773/mda-ndc2akp3ve971zsx.mp4$!
 DJ音乐1,https://vd3.bdstatic.com/mda-ndd2kbfrvgzzt5zc/480p/h264_delogo/1649901097405881759/mda-ndd2kbfrvgzzt5zc.mp4$!
