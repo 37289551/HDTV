@@ -1,7 +1,7 @@
 name: Sync Handle
 on:
   schedule:
-    - cron: '58 1-23/2 * * *'  #  
+    - cron: '58 1-23/1 * * *'  #  
   workflow_dispatch:  #  Mannual trigger allowed
 
 jobs:
