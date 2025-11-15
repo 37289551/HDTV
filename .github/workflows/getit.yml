@@ -93,9 +93,20 @@ jobs:
                   
                   print channel_name "," $0 >> "output/remote.txt"
               }
-          }' input.m3u
-
-
+          }' input.m3u > output/remote.txt
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add output/remote.txt
+          if ! git diff --staged --quiet; then
+            git commit -m "update remote.txt $(date '+%Y-%m-%d %H:%M:%S')"
+            git push
+            echo "Pushed to git change"
+          else
+            echo "No change, skipped push"
+          fi
+          rm -f input.m3u
+          
       - name: 智能合并到userresult.txt
         run: |
           echo "开始智能合并..."
@@ -140,7 +151,7 @@ jobs:
           # 更新userresult.txt
           mv "$temp_file" output/userresult.txt
           echo "合并完成，userresult.txt行数: $(wc -l < output/userresult.txt)"
-
+          
       - name: 提交更改
         run: |
           git config --local user.email "action@github.com"
