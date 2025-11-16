@@ -1,7 +1,7 @@
 name: Sync Handle
 on:
   schedule:
-    - cron: '58 1-23/2 * * *'  #  
+    - cron: '59 1-23/2 * * *'  #  
   workflow_dispatch:  #  Mannual trigger allowed
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
           echo "Current UTC hour: $CURRENT_HOUR_UTC, minute: $CURRENT_MINUTE"
           HOUR_WITHOUT_ZERO=$((10#$CURRENT_HOUR_UTC))
   
-          if [ $((HOUR_WITHOUT_ZERO % 2)) -eq 0 ] && [ $CURRENT_MINUTE -ge 1 ]; then
+          if [ $((HOUR_WITHOUT_ZERO % 2)) -eq 0 ] && [ $CURRENT_MINUTE -ge 2 ]; then
               echo "✓ Time to work!"
               if [ -n "$GITHUB_OUTPUT" ]; then
               echo "is_even_hour=true" >> $GITHUB_OUTPUT
