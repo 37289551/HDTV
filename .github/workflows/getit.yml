@@ -35,18 +35,17 @@ jobs:
           while true; do
             CURRENT_HOUR=$(date -u +%H)
             CURRENT_MINUTE=$(date -u +%M)
-            CURRENT_SECOND=$(date -u +%S)
             echo "Current UTC hour: $CURRENT_HOUR_UTC"
             # 移除前导零
             HOUR_WITHOUT_ZERO=${CURRENT_HOUR_UTC##*0}
             if [ $((HOUR_WITHOUT_ZERO % 2)) -eq 0 ] && 
-            ([ $CURRENT_SECOND -ge 50 ] || [ $CURRENT_MINUTE -ge 1 ]); then
+               [ $CURRENT_MINUTE -ge 1 ] then
               echo "✓ Time to work!"
               echo "is_even_hour=true" >> $GITHUB_OUTPUT
               break
             else
               echo "✗ Wait a moment, to try~"
-              sleep 20
+              sleep 30
             fi
           done
           
