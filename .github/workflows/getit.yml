@@ -33,20 +33,23 @@ jobs:
         if: steps.check_trigger.outputs.should_execute == 'false'
         run: |
           while true; do
-            CURRENT_HOUR=$(date -u +%H)
-            CURRENT_MINUTE=$(date -u +%M)
-            echo "Current UTC hour: $CURRENT_HOUR_UTC"
-            # 移除前导零
-            HOUR_WITHOUT_ZERO=${CURRENT_HOUR_UTC##*0}
-            if [ $((HOUR_WITHOUT_ZERO % 2)) -eq 0 ] && 
-               [ $CURRENT_MINUTE -ge 1 ] then
+          CURRENT_HOUR_UTC=$(date -u +%H)
+          CURRENT_MINUTE=$(date -u +%M)
+    
+          echo "Current UTC hour: $CURRENT_HOUR_UTC, minute: $CURRENT_MINUTE"
+          HOUR_WITHOUT_ZERO=$((10#$CURRENT_HOUR_UTC))
+  
+          if [ $((HOUR_WITHOUT_ZERO % 2)) -eq 0 ] && [ $CURRENT_MINUTE -ge 1 ]; then
               echo "✓ Time to work!"
+              if [ -n "$GITHUB_OUTPUT" ]; then
               echo "is_even_hour=true" >> $GITHUB_OUTPUT
+              fi
               break
-            else
-              echo "✗ Wait a moment, to try~"
-              sleep 30
-            fi
+          else
+             echo "✗ Wait a moment, to try~"
+             echo "Next check in 30 seconds..."
+             sleep 30
+          fi
           done
           
       - name: DOWNLOAD
