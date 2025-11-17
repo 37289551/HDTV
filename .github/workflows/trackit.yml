@@ -5,13 +5,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-file:
+  monitor-and-trigger:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Download remote file
       run: |
@@ -24,14 +22,14 @@ jobs:
         LOCAL_FILE="output/abc.txt"
         if [ ! -f "$LOCAL_FILE" ]; then
           echo "changes_detected=true" >> $GITHUB_OUTPUT
-          echo "本地文件不存在，需要创建"
+          echo "new create file"
         else
           if ! cmp -s /tmp/remote_interface.txt "$LOCAL_FILE"; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
-            echo "检测到文件内容变更"
+            echo "found change, updates needed"
           else
             echo "changes_detected=false" >> $GITHUB_OUTPUT
-            echo "文件内容相同"
+            echo "no change found"
           fi
         fi
 
@@ -40,7 +38,7 @@ jobs:
       run: |
         mkdir -p output
         cp /tmp/remote_interface.txt output/abc.txt
-        echo "文件已更新到 output/abc.txt"
+        echo "updated to abc"
 
     - name: Commit and push changes
       if: steps.compare.outputs.changes_detected == 'true'
@@ -48,9 +46,9 @@ jobs:
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add output/abc.txt
-        git commit -m "自动同步: 更新output/abc.txt"
+        git commit -m "updated abc"
         git push
-        
+
     - name: Trigger getit workflow
       if: steps.compare.outputs.changes_detected == 'true'
       uses: convictional/trigger-workflow-and-wait@v1.6.2
@@ -60,4 +58,5 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         workflow_file_name: getit.yml
         ref: "master"
-        
+        wait_workflow: true
+        wait_interval: 30
