@@ -1,7 +1,7 @@
 name: Sync Handle
 on:
   schedule:
-    - cron: '59 1-23/2 * * *'  #  
+    - cron: '57 1-23/2 * * *'  #  
   workflow_dispatch:  #  Mannual trigger allowed
 
 jobs:
@@ -31,6 +31,8 @@ jobs:
       - name: Wait for even hour
         id: hour_check
         if: steps.check_trigger.outputs.should_execute == 'false'
+            MAX_ATTEMPTS=6
+            attempt_count=0
         run: |
           while true; do
           CURRENT_HOUR_UTC=$(date -u +%H)
@@ -46,9 +48,15 @@ jobs:
               fi
               break
           else
-             echo "✗ Wait a moment, to try~"
-             echo "Next check in 30 seconds..."
-             sleep 30
+              attempt_count=$((attempt_count + 1))
+              echo "✗ TRY times count: $attempt_count/$MAX_ATTEMPTS"
+              if [ $attempt_count -lt $MAX_ATTEMPTS ]; then
+                  echo "✗ Wait a moment, to try~"
+                  sleep 30
+              else
+                 echo "tried maximum times"
+                 exit 1
+              fi
           fi
           done
           
