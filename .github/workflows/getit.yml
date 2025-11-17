@@ -1,7 +1,7 @@
 name: Sync Handle
 on:
   schedule:
-    - cron: '58 1-23/2 * * *'  #  
+    - cron: '57 1-23/2 * * *'  #  
   workflow_dispatch:  #  Mannual trigger allowed
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
 
         if: steps.check_trigger.outputs.should_execute == 'false'
         run: |
-          MAX_ATTEMPTS=8
+          MAX_ATTEMPTS=10
           attempt_count=0
           while true; do
           CURRENT_HOUR_UTC=$(date -u +%H)
