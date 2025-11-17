@@ -30,10 +30,11 @@ jobs:
           fi    
       - name: Wait for even hour
         id: hour_check
-            MAX_ATTEMPTS=8
-            attempt_count=0
+
         if: steps.check_trigger.outputs.should_execute == 'false'
         run: |
+          MAX_ATTEMPTS=8
+          attempt_count=0
           while true; do
           CURRENT_HOUR_UTC=$(date -u +%H)
           CURRENT_MINUTE=$(date -u +%M)
