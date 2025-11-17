@@ -59,5 +59,3 @@ jobs:
         repo: ${{ github.event.repository.name }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
         workflow_file_name: getit.yml
-        wait_workflow: true
-        wait_workflow_timeout: 120
