@@ -1,7 +1,7 @@
 name: Sync Handle
 on:
-  schedule:
-    - cron: '57 1-23/2 * * *'  #  
+ # schedule:
+ #  - cron: '57 1-23/2 * * *'  #  
   workflow_dispatch:  #  Mannual trigger allowed
 
 jobs:
@@ -17,52 +17,8 @@ jobs:
 
       - name: CREATE DIR
         run: mkdir -p output
-
-      - name: Check trigger type
-        id: check_trigger
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual force to run!"
-            echo "should_execute=true" >> $GITHUB_OUTPUT
-          else
-            echo "Auto trigger, check time!"
-            echo "should_execute=false" >> $GITHUB_OUTPUT
-          fi    
-      - name: Wait for even hour
-        id: hour_check
-
-        if: steps.check_trigger.outputs.should_execute == 'false'
-        run: |
-          MAX_ATTEMPTS=10
-          attempt_count=0
-          while true; do
-          CURRENT_HOUR_UTC=$(date -u +%H)
-          CURRENT_MINUTE=$(date -u +%M)
-    
-          echo "Current UTC hour: $CURRENT_HOUR_UTC, minute: $CURRENT_MINUTE"
-          HOUR_WITHOUT_ZERO=$((10#$CURRENT_HOUR_UTC))
-  
-          if [ $((HOUR_WITHOUT_ZERO % 2)) -eq 0 ] && [ $CURRENT_MINUTE -ge 2 ]; then
-              echo "✓ Time to work!"
-              if [ -n "$GITHUB_OUTPUT" ]; then
-                  echo "is_even_hour=true" >> $GITHUB_OUTPUT
-              fi
-              break
-          else
-              attempt_count=$((attempt_count + 1))
-              echo "✗ TRY times count: $attempt_count/$MAX_ATTEMPTS"
-              if [ $attempt_count -lt $MAX_ATTEMPTS ]; then
-                  echo "✗ Wait a moment, to try~"
-                  sleep 30
-              else
-                 echo "tried maximum times"
-                 exit 1
-              fi
-          fi
-          done
           
       - name: DOWNLOAD
-        if: steps.check_trigger.outputs.should_execute == 'true' || steps.hour_check.outputs.is_even_hour == 'true'
         run: |
           > output/remote.txt
           # DOWNLOAD & FORMATING
