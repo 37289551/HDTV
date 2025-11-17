@@ -1,4 +1,4 @@
-name: Sync Handle
+name: getit
 on:
  # schedule:
  #  - cron: '57 1-23/2 * * *'  #  
