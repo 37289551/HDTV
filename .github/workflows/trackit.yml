@@ -18,7 +18,7 @@ jobs:
         curl -s -o /tmp/remote_interface.txt \
         "https://raw.githubusercontent.com/develop202/migu_video/main/interface.txt"
 
-    - name: Compare files and set flag
+    - name: Compare files
       id: compare
       run: |
         LOCAL_FILE="output/abc.txt"
@@ -28,13 +28,14 @@ jobs:
         else
           if ! cmp -s /tmp/remote_interface.txt "$LOCAL_FILE"; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
-          echo "检测到文件内容变更"
-        else
-          echo "changes_detected=false" >> $GITHUB_OUTPUT
-          echo "文件内容相同"
+            echo "检测到文件内容变更"
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+            echo "文件内容相同"
+          fi
         fi
 
-    - name: Create or update local file
+    - name: Create or update file
       if: steps.compare.outputs.changes_detected == 'true'
       run: |
         mkdir -p output
@@ -49,7 +50,7 @@ jobs:
         git add output/abc.txt
         git commit -m "自动同步: 更新output/abc.txt"
         git push
-
+        
     - name: Trigger getit workflow
       if: steps.compare.outputs.changes_detected == 'true'
       uses: convictional/trigger-workflow-and-wait@v1.6.2
