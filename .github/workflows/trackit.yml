@@ -1,0 +1,45 @@
+name: Trackit
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor-and-trigger:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download remote file
+      run: |
+        curl -s -o /tmp/remote_interface.txt \
+        "https://raw.githubusercontent.com/develop202/migu_video/main/interface.txt"
+
+    - name: Compare files
+      id: compare
+      run: |
+        LOCAL_FILE="output/abc.txt"
+        if [ ! -f "$LOCAL_FILE" ]; then
+          echo "changes_detected=false" >> $GITHUB_OUTPUT
+          echo "target file not exist, create one"
+        else
+          if ! cmp -s /tmp/remote_interface.txt "$LOCAL_FILE"; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+            echo "find updates!"
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+            echo "no updates"
+          fi
+        fi
+
+    - name: Trigger getit workflow
+      if: steps.compare.outputs.changes_detected == 'true'
+      uses: convictional/trigger-workflow-and-wait@v1.6.2
+      with:
+        owner: ${{ github.repository_owner }}
+        repo: ${{ github.event.repository.name }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow_file_name: getit.yml
+        wait_workflow: true
+        wait_workflow_timeout: 120
