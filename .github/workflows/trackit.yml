@@ -1,37 +1,54 @@
-name: Trackit
+name: File Synchronization
 on:
   schedule:
     - cron: '*/20 * * * *'
   workflow_dispatch:
 
 jobs:
-  monitor-and-trigger:
+  sync-file:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Download remote file
       run: |
         curl -s -o /tmp/remote_interface.txt \
         "https://raw.githubusercontent.com/develop202/migu_video/main/interface.txt"
 
-    - name: Compare files
+    - name: Compare files and set flag
       id: compare
       run: |
         LOCAL_FILE="output/abc.txt"
         if [ ! -f "$LOCAL_FILE" ]; then
-          echo "changes_detected=false" >> $GITHUB_OUTPUT
-          echo "target file not exist, create one"
+          echo "changes_detected=true" >> $GITHUB_OUTPUT
+          echo "本地文件不存在，需要创建"
         else
           if ! cmp -s /tmp/remote_interface.txt "$LOCAL_FILE"; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
-            echo "find updates!"
-          else
-            echo "changes_detected=false" >> $GITHUB_OUTPUT
-            echo "no updates"
-          fi
+          echo "检测到文件内容变更"
+        else
+          echo "changes_detected=false" >> $GITHUB_OUTPUT
+          echo "文件内容相同"
         fi
+
+    - name: Create or update local file
+      if: steps.compare.outputs.changes_detected == 'true'
+      run: |
+        mkdir -p output
+        cp /tmp/remote_interface.txt output/abc.txt
+        echo "文件已更新到 output/abc.txt"
+
+    - name: Commit and push changes
+      if: steps.compare.outputs.changes_detected == 'true'
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add output/abc.txt
+        git commit -m "自动同步: 更新output/abc.txt"
+        git push
 
     - name: Trigger getit workflow
       if: steps.compare.outputs.changes_detected == 'true'
@@ -42,4 +59,4 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         workflow_file_name: getit.yml
         wait_workflow: true
-        wait_workflow_timeout: 120
+        wait_workflow_timeout: 300
