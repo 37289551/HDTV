@@ -51,7 +51,7 @@ jobs:
 
     - name: Trigger getit workflow
       if: steps.compare.outputs.changes_detected == 'true'
-      uses: convictional/trigger-workflow-and-wait@v1.6.2
+      uses: convictional/trigger-workflow-and-wait@v1.6.5
       with:
         owner: ${{ github.repository_owner }}
         repo: ${{ github.event.repository.name }}
