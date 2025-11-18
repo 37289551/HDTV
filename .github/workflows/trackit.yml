@@ -1,7 +1,7 @@
 name: Trackit
 on:
   schedule:
-    - cron: '0,5,12,24,30 0-22/2 * * *'
+    - cron: '0,8,15,21,30 0-22/2 * * *'
   workflow_dispatch:
 
 jobs:
