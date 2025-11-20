@@ -20,8 +20,7 @@ CCTV-17
 CCTV-4K
 CETV-1
 CETV-2
-CGTN,https://zby.130519.xyz/PLTV/11/224/3221226016/index.m3u8$!
-CGTN,http://iptv.huuc.edu.cn/hls/cgtnhd.m3u8$!
+CGTN
 CGTN英语
 CGTN记录
 CCTV欧洲
