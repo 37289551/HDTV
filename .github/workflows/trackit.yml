@@ -1,62 +1,43 @@
-name: Trackit
+name: sync to gitee
 on:
-#  schedule:
-   # - cron: '0,8,15,25 0-22/2 * * *'
+  schedule:
+    - cron: '0 0-22/2 * * *'
   workflow_dispatch:
 
 jobs:
-  monitor-and-trigger:
+  sync-job:
     runs-on: ubuntu-latest
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout GitHub Repo
+        uses: actions/checkout@v4
+        with:
+          ref: master
+       
+      - name: Download files
+        run: |
+          curl -o IPV4.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.txt"
+          # curl -o IPV6.txt "https://raw.githubusercontent.com/${{ github.repository }}/master/output/ipv6/result.txt"
+          # curl -o IPV4.m3u "https://raw.githubusercontent.com/${{ github.repository }}/master/output/userresult.m3u"
 
-    - name: Download remote file
-      run: |
-        curl -s -o /tmp/remote_interface.txt \
-        "https://raw.githubusercontent.com/develop202/migu_video/main/interface.txt"
+      - name: Clone Gitee Repo
+        env:
+          GITEE_USER: ${{ secrets.GITEE_USER }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_REPO: ${{ secrets.GITEE_REPO }}
+        run: |
+          git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo
 
-    - name: Compare files
-      id: compare
-      run: |
-        LOCAL_FILE="output/abc.txt"
-        if [ ! -f "$LOCAL_FILE" ]; then
-          echo "changes_detected=true" >> $GITHUB_OUTPUT
-          echo "new create file"
-        else
-          if ! cmp -s /tmp/remote_interface.txt "$LOCAL_FILE"; then
-            echo "changes_detected=true" >> $GITHUB_OUTPUT
-            echo "found change, updates needed"
-          else
-            echo "changes_detected=false" >> $GITHUB_OUTPUT
-            echo "no change found"
-          fi
-        fi
-
-    - name: Create or update file
-      if: steps.compare.outputs.changes_detected == 'true'
-      run: |
-        mkdir -p output
-        cp /tmp/remote_interface.txt output/abc.txt
-        echo "updated to abc"
-
-    - name: Commit and push changes
-      if: steps.compare.outputs.changes_detected == 'true'
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add output/abc.txt
-        git commit -m "updated abc"
-        git push
-
-    - name: Trigger getit workflow
-      if: steps.compare.outputs.changes_detected == 'true'
-      uses: convictional/trigger-workflow-and-wait@v1.6.5
-      with:
-        owner: ${{ github.repository_owner }}
-        repo: ${{ github.event.repository.name }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        workflow_file_name: getit.yml
-        ref: "master"
-        wait_workflow: true
-        wait_interval: 30
+      - name: Sync files
+        run: |
+          cd gitee-repo
+          git config user.name "GitHub Actions"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout master || git checkout -b master
+          cp ../IPV4.txt ./
+          # cp ../IPV6.txt ./
+          # cp ../IPV4.m3u ./
+          git add IPV4.txt 
+          # add to above line IPV6.txt IPV4.m3u
+          git commit -m "Sync from GitHub" || exit 0
+          git push origin master
