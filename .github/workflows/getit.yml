@@ -1,57 +1,108 @@
 name: Merge Channel Lists
+
 on:
   schedule:
-  - cron: '0 0 * * *' # 每天UTC时间0点（北京时间8点）触发
-  workflow_dispatch: # 支持手动触发
+    - cron: '0 0 * * *'  # 每天UTC时间0点（北京时间8点）
+  workflow_dispatch:     # 支持手动触发
 
 jobs:
   merge-channels:
-   runs-on: ubuntu-latest
-   permissions:
-      contents: write 
-
-   steps:
-   - name: Checkout repository
-     uses: actions/checkout@v4
-     with:
-       ref: master
-       token: ${{ secrets.GITHUB_TOKEN }}
-       
-   - name: Fetch remote channel list
-     run: |
-      curl -s -o remote.txt https://raw.githubusercontent.com/jerome158/CHN/refs/heads/main/YD.txt
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
-   - name: Merge
-     run: |
-       if [ ! -f output/userresult.txt ]; then
-           touch output/userresult.txt
-       fi
- 
-       while IFS= read -r remote_line; do
-         if [ -n "$remote_line" ]; then
-            remote_channel=$(echo "$remote_line" | cut -d',' -f1)
-            remote_url=$(echo "$remote_line" | cut -d',' -f2)
-            existing_line=$(grep "^$remote_channel," output/userresult.txt)
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         
-            if [ -n "$existing_line" ]; then
-               existing_url=$(echo "$existing_line" | cut -d',' -f2)
-               if [ "$remote_url" != "$existing_url" ]; then
-                  sed -i "/^$remote_channel,/d" output/userresult.txt
-                  echo "$remote_channel,$existing_url;$remote_url" >> output/userresult.txt
-               fi
+    - name: Create directory structure
+      run: |
+        mkdir -p output
+        echo "目录结构创建完成"
+        
+    - name: Download remote channel list
+      run: |
+        curl -s -o remote.txt https://raw.githubusercontent.com/jerome158/CHN/refs/heads/main/YD.txt
+        echo "远程频道列表下载完成，文件行数: $(wc -l < remote.txt)"
+        
+    - name: Initialize userresult.txt if not exists
+      run: |
+        if [ ! -f output/userresult.txt ]; then
+          echo "创建新的userresult.txt文件"
+          touch output/userresult.txt
+        else
+          echo "使用现有的userresult.txt文件，当前行数: $(wc -l < output/userresult.txt)"
+        fi
+        
+    - name: Merge channel lists
+      run: |
+        # 创建临时工作文件
+        cp output/userresult.txt temp_result.txt
+        
+        # 处理远程频道列表
+        while IFS= read -r remote_line || [ -n "$remote_line" ]; do
+          # 跳过空行
+          [ -z "$remote_line" ] && continue
+          
+          # 提取频道名称和URL
+          remote_channel=$(echo "$remote_line" | cut -d',' -f1)
+          remote_url=$(echo "$remote_line" | cut -d',' -f2)
+          
+          # 检查字段是否有效
+          if [ -z "$remote_channel" ] || [ -z "$remote_url" ]; then
+            echo "跳过无效行: $remote_line"
+            continue
+          fi
+          
+          # 在现有文件中查找相同频道
+          existing_line=$(grep "^$remote_channel," temp_result.txt | head -1)
+          
+          if [ -n "$existing_line" ]; then
+            existing_url=$(echo "$existing_line" | cut -d',' -f2)
+            
+            # 如果频道相同但地址不同，则合并
+            if [ "$remote_url" != "$existing_url" ]; then
+              # 检查URL是否已存在
+              if echo "$existing_url" | grep -q "$remote_url"; then
+                echo "跳过重复URL: $remote_channel - $remote_url"
+              else
+                # 删除原有行并添加合并后的行
+                sed -i "/^$remote_channel,/d" temp_result.txt
+                echo "$remote_channel,$existing_url;$remote_url" >> temp_result.txt
+                echo "合并频道: $remote_channel"
+              fi
             else
-               :
-           fi
-       fi
-          done < remote.txt
-    
-   - name: Commit and push changes
-     run: |
-         git config --local user.email "action@github.com"
-         git config --local user.name "GitHub Action"
-         git add output/userresult.txt
-         git diff --staged --quiet || git commit -m "Auto-update channel list [skip ci]"
-         git push
+              echo "跳过相同频道和URL: $remote_channel"
+            fi
+          else
+            echo "没有找到匹配频道: $remote_channel"
+          fi
+        done < remote.txt
+        
+        # 更新最终文件
+        mv temp_result.txt output/userresult.txt
+        echo "合并完成，最终文件行数: $(wc -l < output/userresult.txt)"
+        
+    - name: Display merge results
+      run: |
+        echo "=== 合并后的频道列表 ==="
+        cat output/userresult.txt
+        echo "========================="
+        
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add output/userresult.txt
+        if git diff --staged --quiet; then
+          echo "没有变化需要提交"
+        else
+          git commit -m "Auto-update: 合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
+          echo "更改已提交并推送"
+        fi
 
    - name: Clone Gitee Repo
      env:
