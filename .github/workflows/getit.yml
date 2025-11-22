@@ -35,6 +35,19 @@ jobs:
         else
           echo "使用现有本地频道文件"
         fi
+    - name: Check first line match
+      run: |
+        # 检查本地文件是否为空
+        if [ ! -s output/userresult.txt ]; then
+            echo "本地文件为空，继续执行合并"
+        else
+            local_first_line=$(head -n 1 output/userresult.txt)
+            remote_first_line=$(head -n 1 remote.txt)
+    
+           if [ "$local_first_line" = "$remote_first_line" ]; then
+              echo "第一行内容相同，停止工作流执行"
+              exit 0
+        fi
         
     - name: Merge channels to beginning
       run: |
@@ -55,3 +68,12 @@ jobs:
           git commit -m "Auto-update: 安全合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
         git push
         fi
+        
+    - name: Trigger trackit workflow
+      run: |
+          curl -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \/di
+          https://api.github.com/repos/${{ github.repository }}/actions/workflows/trackit.ymlspatches \
+          -d '{"ref":"main"}' || echo "如果trackit工作流不存在，此步骤会失败，但不会影响主流程"
+          
