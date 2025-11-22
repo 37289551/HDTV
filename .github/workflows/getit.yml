@@ -104,16 +104,16 @@ jobs:
           echo "更改已提交并推送"
         fi
 
-   - name: Clone Gitee Repo
-     env:
+    - name: Clone Gitee Repo
+      env:
           GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
-     run: |
+      run: |
           git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo
 
-   - name: Sync files
-     run: |
+    - name: Sync files
+      run: |
           cd gitee-repo
           git config user.name "GitHub Actions"
           git config user.email "actions@users.noreply.github.com"
