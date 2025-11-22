@@ -2,8 +2,8 @@ name: Safe Channel List Merge
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天UTC时间0点（北京时间8点）
-  workflow_dispatch:     # 支持手动触发
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   merge-channels:
@@ -17,101 +17,106 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
-        
     - name: Create directory structure
       run: |
         mkdir -p output
-        echo "Directory structure created"
+        echo "目录结构创建完成"
         
-    - name: Download and merge channels
+    - name: Download remote channel list
       run: |
-        # 下载远程频道列表
         curl -s -o remote.txt https://raw.githubusercontent.com/jerome158/CHN/refs/heads/main/YD.txt
+        echo "远程频道列表下载完成"
         
-        # 创建Python合并脚本
-        cat > merge_script.py << 'EOF'
+    - name: Initialize local file
+      run: |
+        if [ ! -f output/userresult.txt ]; then
+          touch output/userresult.txt
+          echo "创建新的本地频道文件"
+        else
+          echo "使用现有本地频道文件，当前行数: $(wc -l < output/userresult.txt)"
+        fi
         
-        import os
-
-        def load_channels(filename):
-            channels = []
-        if os.path.exists(filename):
-          with open(filename, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and ',' in line:
-                    parts = line.split(',', 1)
-                    if len(parts) == 2:
-                        channels.append((parts[0], parts[1]))
-          return channels
-
-    def save_channels(filename, channels):
-        with open(filename, 'w', encoding='utf-8') as f:
-          for channel, url in channels:
-            f.write(f"{channel},{url}\n")
-
-    def main():
-        local_file = "output/userresult.txt"
-        remote_file = "remote.txt"
-
-        os.makedirs("output", exist_ok=True)
-
-    if not os.path.exists(local_file):
-        open(local_file, 'w').close()
-        print("Created new userresult.txt file")
-  
-       local_channels = load_channels(local_file)
-       remote_channels = load_channels(remote_file)
-    
-    print(f"Local channels: {len(local_channels)}")
-    print(f"Remote channels: {len(remote_channels)}")
-    
-    # 创建合并结果
-      merged_channels = local_channels.copy()
-      changes_made = False
-    
-    # 处理每个远程频道
-    for remote_channel, remote_url in remote_channels:
-        # 查找相同频道的所有位置
-        matching_indices = []
-        for i, (local_channel, local_url) in enumerate(merged_channels):
-            if local_channel == remote_channel:
-                matching_indices.append(i)
+    - name: Safe merge channel lists
+      run: |
+        # 创建临时工作文件
+        cp output/userresult.txt temp_merged.txt
         
-        if matching_indices:
-            # 获取最后一个相同频道的索引
-            last_index = matching_indices[-1]
+        # 统计初始行数
+        initial_lines=$(wc -l < temp_merged.txt)
+        echo "初始频道数: $initial_lines"
+        
+        # 处理远程频道列表
+        while IFS= read -r remote_line || [ -n "$remote_line" ]; do
+          [ -z "$remote_line" ] && continue
+          
+          # 提取频道名和URL
+          remote_channel=$(echo "$remote_line" | cut -d',' -f1)
+          remote_url=$(echo "$remote_line" | cut -d',' -f2)
+          
+          # 检查字段是否有效
+          if [ -z "$remote_channel" ] || [ -z "$remote_url" ]; then
+            echo "跳过无效行: $remote_line"
+            continue
+          fi
+          
+          # 检查是否已存在完全相同的行
+          if grep -Fxq "$remote_line" temp_merged.txt; then
+            echo "跳过完全相同的行: $remote_channel"
+            continue
+          fi
+          
+          # 查找所有相同频道的行
+          matching_lines=$(grep -n "^$remote_channel," temp_merged.txt)
+          
+          if [ -n "$matching_lines" ]; then
+            # 获取最后一个相同频道的行号
+            last_line_info=$(echo "$matching_lines" | tail -1)
+            last_line_num=$(echo "$last_line_info" | cut -d':' -f1)
+          
+            # 检查URL是否已存在
+            url_exists=false
+            while IFS= read -r match_info; do
+              [ -z "$match_info" ] && continue
+              existing_url=$(echo "$match_info" | cut -d':' -f2- | cut -d',' -f2)
+              if [ "$existing_url" = "$remote_url" ]; then
+              url_exists=true
+              break
+            fi
+            done <<< "$matching_lines"
             
-            # 检查是否已存在相同URL
-            url_exists = any(existing_url == remote_url for _, existing_url in merged_channels)
-            
-            if not url_exists:
-                # 在最后一个相同频道后插入新行
-                insert_position = last_index + 1
-                merged_channels.insert(insert_position, (remote_channel, remote_url))
-                changes_made = True
-                print(f"Added new URL: {remote_channel} - {remote_url}")
-            else:
-                print(f"Skipped duplicate URL: {remote_channel}")
-        else:
-            print(f"No matching channel: {remote_channel}")
-    
-    # 保存结果
-    if changes_made:
-        save_channels(local_file, merged_channels)
-        print(f"Merge completed. Total channels: {len(merged_channels)}")
-    else:
-        print("No changes detected")
-
-if __name__ == "__main__":
-    main()
-EOF
-
-        python merge_script.py
+            if [ "$url_exists" = false ]; then
+              # 使用awk在最后一个相同频道后插入新行
+              awk -v insert_after="$last_line_num" -v new_line="$remote_line" '
+                NR == insert_after { print; print new_line; next }
+                { print }
+              ' temp_merged.txt > temp_merged2.txt
+              mv temp_merged2.txt temp_merged.txt
+              echo "在频道 $remote_channel 下方添加新URL: $remote_url"
+            else
+              echo "跳过重复URL: $remote_channel"
+            fi
+          else
+            echo "没有找到匹配频道: $remote_channel"
+          fi
+        done < remote.txt
+        
+        # 检查是否有变化
+        final_lines=$(wc -l < temp_merged.txt)
+        if [ "$initial_lines" -eq "$final_lines" ]; then
+          echo "没有检测到需要合并的更改"
+          rm temp_merged.txt
+        else
+          mv temp_merged.txt output/userresult.txt
+          echo "安全合并完成，最终频道数: $final_lines"
+        fi
+        
+    - name: Display results
+      run: |
+        echo "=== 合并结果预览 ==="
+        head -10 output/userresult.txt
+        echo "..."
+        tail -5 output/userresult.txt
+        echo "===================="
         
     - name: Commit and push changes
       run: |
@@ -119,8 +124,8 @@ EOF
         git config --local user.name "github-actions[bot]"
         git add output/userresult.txt
         if git diff --staged --quiet; then
-          echo "No changes to commit"
+          echo "没有变化需要提交"
         else
-          git commit -m "Auto-update: Safe channel list merge $(date +'%Y-%m-%d %H:%M:%S')"
+          git commit -m "Auto-update: 安全合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
           git push
         fi
