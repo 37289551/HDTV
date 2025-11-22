@@ -1,10 +1,9 @@
-
-name: List Merge
+name: Safe Channel List Merge
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'  # 每天UTC时间0点（北京时间8点）
+  workflow_dispatch:     # 支持手动触发
 
 jobs:
   merge-channels:
@@ -26,7 +25,7 @@ jobs:
     - name: Create directory structure
       run: |
         mkdir -p output
-        echo "目录结构创建完成"
+        echo "Directory structure created"
         
     - name: Download and merge channels
       run: |
@@ -35,77 +34,83 @@ jobs:
         
         # 创建Python合并脚本
         cat > merge_script.py << 'EOF'
-
+        
         import os
-        import urllib.request
 
         def load_channels(filename):
-        """加载频道列表"""
-        channels = []
+            channels = []
         if os.path.exists(filename):
-        with open(filename, 'r', encoding='utf-8') as f:
+          with open(filename, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
                 if line and ',' in line:
                     parts = line.split(',', 1)
                     if len(parts) == 2:
                         channels.append((parts[0], parts[1]))
-        return channels
+          return channels
 
-        def main():
-        # 确保目录存在
-          os.makedirs("output", exist_ok=True)
+    def save_channels(filename, channels):
+        with open(filename, 'w', encoding='utf-8') as f:
+          for channel, url in channels:
+            f.write(f"{channel},{url}\n")
+
+    def main():
+        local_file = "output/userresult.txt"
+        remote_file = "remote.txt"
+
+        os.makedirs("output", exist_ok=True)
+
+    if not os.path.exists(local_file):
+        open(local_file, 'w').close()
+        print("Created new userresult.txt file")
+  
+       local_channels = load_channels(local_file)
+       remote_channels = load_channels(remote_file)
     
-          # 初始化本地文件
-          local_file = "output/userresult.txt"
-          if not os.path.exists(local_file):
-          open(local_file, 'w').close()
+    print(f"Local channels: {len(local_channels)}")
+    print(f"Remote channels: {len(remote_channels)}")
     
-          # 加载频道列表
-          local_channels = load_channels(local_file)
-          remote_channels = load_channels("remote.txt")
+    # 创建合并结果
+      merged_channels = local_channels.copy()
+      changes_made = False
     
-          print(f"本地频道数: {len(local_channels)}")
-          print(f"远程频道数: {len(remote_channels)}")
-    
-          # 创建合并结果
-          merged_channels = local_channels.copy()
-          changes_made = False
-    
-          # 处理每个远程频道
-          for remote_channel, remote_url in remote_channels:
-            # 查找相同频道的所有位置
-            matching_indices = []
-            for i, (local_channel, local_url) in enumerate(merged_channels):
-              if local_channel == remote_channel:
+    # 处理每个远程频道
+    for remote_channel, remote_url in remote_channels:
+        # 查找相同频道的所有位置
+        matching_indices = []
+        for i, (local_channel, local_url) in enumerate(merged_channels):
+            if local_channel == remote_channel:
                 matching_indices.append(i)
         
-              if matching_indices:
-                # 获取最后一个相同频道的索引
-                last_index = matching_indices[-1]
-                url_exists = any(local_url == remote_url for _, local_url in merged_channels)
+        if matching_indices:
+            # 获取最后一个相同频道的索引
+            last_index = matching_indices[-1]
             
-              if not url_exists:
-                # 在最后一个相同频道后插入
+            # 检查是否已存在相同URL
+            url_exists = any(existing_url == remote_url for _, existing_url in merged_channels)
+            
+            if not url_exists:
+                # 在最后一个相同频道后插入新行
                 insert_position = last_index + 1
                 merged_channels.insert(insert_position, (remote_channel, remote_url))
                 changes_made = True
-                  print(f"添加新URL: {remote_channel} - {remote_url}")
-              else:
-                  print(f"跳过重复URL: {remote_channel}")
+                print(f"Added new URL: {remote_channel} - {remote_url}")
             else:
-                print(f"无匹配频道: {remote_channel}")
+                print(f"Skipped duplicate URL: {remote_channel}")
+        else:
+            print(f"No matching channel: {remote_channel}")
     
-            # 保存结果
-          if changes_made:
-              with open(local_file, 'w', encoding='utf-8') as f:
-                for channel, url in merged_channels:
-                  f.write(f"{channel},{url}\n")
-              print(f"合并完成，总频道数: {len(merged_channels)}")
-    
-          if __name__ == "__main__":
-            main()
-        EOF
+    # 保存结果
+    if changes_made:
+        save_channels(local_file, merged_channels)
+        print(f"Merge completed. Total channels: {len(merged_channels)}")
+    else:
+        print("No changes detected")
+
+if __name__ == "__main__":
+    main()
+EOF
+
         python merge_script.py
         
     - name: Commit and push changes
@@ -114,8 +119,8 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git add output/userresult.txt
         if git diff --staged --quiet; then
-          echo "没有变化需要提交"
+          echo "No changes to commit"
         else
-          git commit -m "Auto-update: 安全合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
+          git commit -m "Auto-update: Safe channel list merge $(date +'%Y-%m-%d %H:%M:%S')"
           git push
         fi
