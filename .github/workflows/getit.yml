@@ -1,4 +1,5 @@
-name: YD Merge
+
+name: Safe Channel List Merge
 
 on:
   schedule:
@@ -20,6 +21,7 @@ jobs:
     - name: Create directory structure
       run: |
         mkdir -p output
+        echo "目录结构创建完成"
         
     - name: Download remote channel list
       run: |
@@ -35,10 +37,12 @@ jobs:
           echo "使用现有的userresult.txt文件，当前行数: $(wc -l < output/userresult.txt)"
         fi
         
-    - name: merge
+    - name: Safe merge channel lists
       run: |
+        # 创建临时工作文件
         cp output/userresult.txt temp_result.txt
         
+        # 处理远程频道列表
         while IFS= read -r remote_line || [ -n "$remote_line" ]; do
           [ -z "$remote_line" ] && continue
           
@@ -49,20 +53,26 @@ jobs:
             echo "跳过无效行: $remote_line"
             continue
           fi
-
+          
+          # 检查是否已存在完全相同的行
           if grep -q "^$remote_line$" temp_result.txt; then
             echo "跳过完全相同的行: $remote_channel"
             continue
           fi
-
-          existing_line=$(grep "^$remote_channel," temp_result.txt | head -1)
           
-          if [ -n "$existing_line" ]; then
-            existing_url=$(echo "$existing_line" | cut -d',' -f2)
-
+          # 检查是否已存在相同频道名
+          existing_lines=$(grep -n "^$remote_channel," temp_result.txt)
+          
+          if [ -n "$existing_lines" ]; then
+            # 获取最后一个相同频道的行号
+            last_line_number=$(echo "$existing_lines" | tail -1 | cut -d':' -f1)
+            existing_url=$(echo "$existing_lines" | tail -1 | cut -d':' -f2- | cut -d',' -f2)
+            
+            # 如果URL不同，则在最后一个相同频道下方插入新行
             if [ "$remote_url" != "$existing_url" ]; then
-              echo "$remote_line" >> temp_result.txt
-              echo "添加新URL行: $remote_channel - $remote_url"
+              # 使用sed在指定行后插入新行
+              sed -i "${last_line_number}a\\$remote_line" temp_result.txt
+              echo "在频道 $remote_channel 下方添加新URL: $remote_url"
             else
               echo "跳过相同频道和URL: $remote_channel"
             fi
@@ -70,7 +80,8 @@ jobs:
             echo "没有找到匹配频道: $remote_channel（保持现有内容不变）"
           fi
         done < remote.txt
-
+        
+        # 检查是否有实际变化
         if diff output/userresult.txt temp_result.txt > /dev/null; then
           echo "没有检测到需要合并的更改"
           rm temp_result.txt
@@ -78,6 +89,12 @@ jobs:
           mv temp_result.txt output/userresult.txt
           echo "安全合并完成，最终文件行数: $(wc -l < output/userresult.txt)"
         fi
+        
+    - name: Display final results
+      run: |
+        echo "=== 最终频道列表 ==="
+        cat output/userresult.txt
+        echo "===================="
         
     - name: Commit and push changes
       run: |
@@ -89,4 +106,6 @@ jobs:
         else
           git commit -m "Auto-update: 安全合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
           git push
+          echo "安全合并更改已提交"
         fi
+
