@@ -1,5 +1,5 @@
 
-name: Safe Channel List Merge
+name: List Merge
 
 on:
   schedule:
@@ -56,8 +56,8 @@ jobs:
           
           # 检查是否已存在完全相同的行
           if grep -q "^$remote_line$" temp_result.txt; then
-            echo "跳过完全相同的行: $remote_channel"
-            continue
+              echo "跳过完全相同的行: $remote_channel"
+              continue
           fi
           
           # 检查是否已存在相同频道名
@@ -70,8 +70,11 @@ jobs:
             
             # 如果URL不同，则在最后一个相同频道下方插入新行
             if [ "$remote_url" != "$existing_url" ]; then
-              # 使用sed在指定行后插入新行
-              sed -i "${last_line_number}a\\$remote_line" temp_result.txt
+              # 使用awk在指定行后插入新行
+              awk -v line_num="$last_line_number" -v new_line="$remote_line" '
+                  NR == line_num { print $0; print new_line; next }
+                  { print $0 }
+                ' temp_result.txt > temp_result2.txt && mv temp_result2.txt temp_result.txt
               echo "在频道 $remote_channel 下方添加新URL: $remote_url"
             else
               echo "跳过相同频道和URL: $remote_channel"
