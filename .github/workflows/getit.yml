@@ -51,15 +51,12 @@ jobs:
               echo "第一行内容相同，停止工作流执行"
               exit 0
             fi
+            else
+              cat remote.txt output/userresult.txt > temp_merged.txt
+              mv temp_merged.txt output/userresult.txt
+              echo "合并完成：远程内容已添加到文件开头"
+              echo "最终文件行数：$(wc -l < output/userresult.txt)"
         fi
-        
-    - name: Merge channels to beginning
-      run: |
-        # 将远程文件内容插入到本地文件第一行之前
-        cat remote.txt output/userresult.txt > temp_merged.txt
-        mv temp_merged.txt output/userresult.txt
-        echo "合并完成：远程内容已添加到文件开头"
-        echo "最终文件行数：$(wc -l < output/userresult.txt)"
         
     - name: Commit and push changes
       run: |
