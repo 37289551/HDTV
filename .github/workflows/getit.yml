@@ -1,4 +1,5 @@
-name: Safe Channel List Merge
+
+name: List Merge
 
 on:
   schedule:
@@ -10,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     
     steps:
     - name: Checkout repository
@@ -35,6 +37,7 @@ jobs:
         else
           echo "使用现有本地频道文件"
         fi
+        
     - name: Check first line match
       run: |
         # 检查本地文件是否为空
@@ -43,8 +46,8 @@ jobs:
         else
             local_first_line=$(head -n 1 output/userresult.txt)
             remote_first_line=$(head -n 1 remote.txt)
-    
-           if [ "$local_first_line" = "$remote_first_line" ]; then
+            
+            if [ "$local_first_line" = "$remote_first_line" ]; then
               echo "第一行内容相同，停止工作流执行"
               exit 0
         fi
@@ -56,7 +59,7 @@ jobs:
         mv temp_merged.txt output/userresult.txt
         echo "合并完成：远程内容已添加到文件开头"
         echo "最终文件行数：$(wc -l < output/userresult.txt)"
-
+        
     - name: Commit and push changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -66,14 +69,18 @@ jobs:
           echo "没有变化需要提交"
         else
           git commit -m "Auto-update: 安全合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
-        git push
+          git push
         fi
         
     - name: Trigger trackit workflow
       run: |
-          curl -X POST \
+        curl -X POST \
           -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \/di
-          https://api.github.com/repos/${{ github.repository }}/actions/workflows/trackit.ymlspatches \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository }}/actions/workflows/trackit.yml/dispatches \
           -d '{"ref":"main"}' || echo "如果trackit工作流不存在，此步骤会失败，但不会影响主流程"
-          
+        
+    - name: Display completion message
+      run: |
+        echo "频道列表合并工作流执行完成"
+        echo "已触发trackit工作流"
