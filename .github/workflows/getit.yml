@@ -50,6 +50,7 @@ jobs:
             if [ "$local_first_line" = "$remote_first_line" ]; then
               echo "第一行内容相同，停止工作流执行"
               exit 0
+            fi
         fi
         
     - name: Merge channels to beginning
