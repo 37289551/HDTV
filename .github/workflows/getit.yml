@@ -76,4 +76,4 @@ jobs:
     - name: Display completion message
       run: |
         echo "频道列表合并工作流执行完成"
-        echo "已触发trackit工作流
+        echo "已触发trackit工作流"
