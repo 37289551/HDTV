@@ -1,4 +1,4 @@
-name: Merge Channel Lists
+name: YD Merge
 
 on:
   schedule:
@@ -20,14 +20,13 @@ jobs:
     - name: Create directory structure
       run: |
         mkdir -p output
-        echo "目录结构创建完成"
         
     - name: Download remote channel list
       run: |
         curl -s -o remote.txt https://raw.githubusercontent.com/jerome158/CHN/refs/heads/main/YD.txt
         echo "远程频道列表下载完成，文件行数: $(wc -l < remote.txt)"
         
-    - name: Initialize userresult.txt if not exists
+    - name: Initialize userresult.txt
       run: |
         if [ ! -f output/userresult.txt ]; then
           echo "创建新的userresult.txt文件"
@@ -36,60 +35,49 @@ jobs:
           echo "使用现有的userresult.txt文件，当前行数: $(wc -l < output/userresult.txt)"
         fi
         
-    - name: Merge channel lists
+    - name: merge
       run: |
-        # 创建临时工作文件
         cp output/userresult.txt temp_result.txt
         
-        # 处理远程频道列表
         while IFS= read -r remote_line || [ -n "$remote_line" ]; do
-          # 跳过空行
           [ -z "$remote_line" ] && continue
           
-          # 提取频道名称和URL
           remote_channel=$(echo "$remote_line" | cut -d',' -f1)
           remote_url=$(echo "$remote_line" | cut -d',' -f2)
           
-          # 检查字段是否有效
           if [ -z "$remote_channel" ] || [ -z "$remote_url" ]; then
             echo "跳过无效行: $remote_line"
             continue
           fi
-          
-          # 在现有文件中查找相同频道
+
+          if grep -q "^$remote_line$" temp_result.txt; then
+            echo "跳过完全相同的行: $remote_channel"
+            continue
+          fi
+
           existing_line=$(grep "^$remote_channel," temp_result.txt | head -1)
           
           if [ -n "$existing_line" ]; then
             existing_url=$(echo "$existing_line" | cut -d',' -f2)
-            
-            # 如果频道相同但地址不同，则合并
+
             if [ "$remote_url" != "$existing_url" ]; then
-              # 检查URL是否已存在
-              if echo "$existing_url" | grep -q "$remote_url"; then
-                echo "跳过重复URL: $remote_channel - $remote_url"
-              else
-                # 删除原有行并添加合并后的行
-                sed -i "/^$remote_channel,/d" temp_result.txt
-                echo "$remote_channel,$existing_url;$remote_url" >> temp_result.txt
-                echo "合并频道: $remote_channel"
-              fi
+              echo "$remote_line" >> temp_result.txt
+              echo "添加新URL行: $remote_channel - $remote_url"
             else
               echo "跳过相同频道和URL: $remote_channel"
             fi
           else
-            echo "没有找到匹配频道: $remote_channel"
+            echo "没有找到匹配频道: $remote_channel（保持现有内容不变）"
           fi
         done < remote.txt
-        
-        # 更新最终文件
-        mv temp_result.txt output/userresult.txt
-        echo "合并完成，最终文件行数: $(wc -l < output/userresult.txt)"
-        
-    - name: Display merge results
-      run: |
-        echo "=== 合并后的频道列表 ==="
-        cat output/userresult.txt
-        echo "========================="
+
+        if diff output/userresult.txt temp_result.txt > /dev/null; then
+          echo "没有检测到需要合并的更改"
+          rm temp_result.txt
+        else
+          mv temp_result.txt output/userresult.txt
+          echo "安全合并完成，最终文件行数: $(wc -l < output/userresult.txt)"
+        fi
         
     - name: Commit and push changes
       run: |
@@ -99,29 +87,6 @@ jobs:
         if git diff --staged --quiet; then
           echo "没有变化需要提交"
         else
-          git commit -m "Auto-update: 合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
+          git commit -m "Auto-update: 安全合并频道列表 $(date +'%Y-%m-%d %H:%M:%S')"
           git push
-          echo "更改已提交并推送"
         fi
-
-    - name: Clone Gitee Repo
-      env:
-          GITEE_USER: ${{ secrets.GITEE_USER }}
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-          GITEE_REPO: ${{ secrets.GITEE_REPO }}
-      run: |
-          git clone "https://${GITEE_USER}:${GITEE_TOKEN}@gitee.com/${GITEE_USER}/${GITEE_REPO}.git" gitee-repo
-
-    - name: Sync files
-      run: |
-          cd gitee-repo
-          git config user.name "GitHub Actions"
-          git config user.email "actions@users.noreply.github.com"
-          git checkout master || git checkout -b master
-          cp ../IPV4.txt ./
-          # cp ../IPV6.txt ./
-          # cp ../IPV4.m3u ./
-          git add IPV4.txt 
-          # add to above line IPV6.txt IPV4.m3u
-          git commit -m "Sync from GitHub" || exit 0
-          git push origin master
