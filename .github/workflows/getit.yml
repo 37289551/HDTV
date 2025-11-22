@@ -12,16 +12,17 @@ jobs:
    steps:
    - name: Checkout repository
      uses: actions/checkout@v4
-  
+     with:
+       ref: master
    - name: Fetch remote channel list
      run: |
       curl -s -o remote.txt https://raw.githubusercontent.com/jerome158/CHN/refs/heads/main/YD.txt
     
-   - name: Merge channel lists
+   - name: Merge
      run: |
        mkdir -p output
        if [ ! -f output/userresult.txt ]; then
-       touch output/userresult.txt
+           touch output/userresult.txt
        fi
  
        while IFS= read -r remote_line; do
