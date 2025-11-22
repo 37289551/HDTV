@@ -7,20 +7,22 @@ on:
 jobs:
   merge-channels:
    runs-on: ubuntu-latest
-
+   permissions:
+      contents: write 
 
    steps:
    - name: Checkout repository
      uses: actions/checkout@v4
      with:
        ref: master
+       token: ${{ secrets.GITHUB_TOKEN }}
+       
    - name: Fetch remote channel list
      run: |
       curl -s -o remote.txt https://raw.githubusercontent.com/jerome158/CHN/refs/heads/main/YD.txt
     
    - name: Merge
      run: |
-       mkdir -p output
        if [ ! -f output/userresult.txt ]; then
            touch output/userresult.txt
        fi
