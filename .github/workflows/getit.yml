@@ -42,21 +42,23 @@ jobs:
       run: |
         # 检查本地文件是否为空
         if [ ! -s output/userresult.txt ]; then
-            echo "本地文件为空，继续执行合并"
+          echo "本地文件为空，继续执行合并"
         else
-            local_first_line=$(head -n 1 output/userresult.txt)
-            remote_first_line=$(head -n 1 remote.txt)
-            
-            if [ "$local_first_line" = "$remote_first_line" ]; then
-              echo "第一行内容相同，停止工作流执行"
-              exit 0
-            fi
-            else
-              cat remote.txt output/userresult.txt > temp_merged.txt
-              mv temp_merged.txt output/userresult.txt
-              echo "合并完成：远程内容已添加到文件开头"
-              echo "最终文件行数：$(wc -l < output/userresult.txt)"
+          local_first_line=$(head -n 1 output/userresult.txt)
+          remote_first_line=$(head -n 1 remote.txt)
+          
+          if [ "$local_first_line" = "$remote_first_line" ]; then
+          echo "第一行内容相同，停止工作流执行"
+          exit 0
+          fi
         fi
+      
+    - name: Merge channels to beginning
+      run: |
+        cat remote.txt output/userresult.txt > temp_merged.txt
+        mv temp_merged.txt output/userresult.txt
+        echo "合并完成：远程内容已添加到文件开头"
+        echo "最终文件行数：$(wc -l < output/userresult.txt)"
         
     - name: Commit and push changes
       run: |
@@ -81,4 +83,4 @@ jobs:
     - name: Display completion message
       run: |
         echo "频道列表合并工作流执行完成"
-        echo "已触发trackit工作流"
+        echo "已触发trackit工作流
