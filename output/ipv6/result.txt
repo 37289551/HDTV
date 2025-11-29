@@ -84,6 +84,7 @@ CCTV美洲,https://live.chinacert.cftest5.cn/mg/?id=608807416
 东方卫视,https://zby.130519.xyz/PLTV/11/224/3221226106/index.m3u8
 浙江卫视,http://iptv.huuc.edu.cn/hls/zjhd.m3u8
 浙江卫视,https://zby.130519.xyz/PLTV/11/224/3221225727/index.m3u8
+浙江卫视,http://ali-vl.cztv.com/channels/lantian/channel001/360p.m3u8
 湖南卫视,http://iptv.huuc.edu.cn/hls/hunanhd.m3u8
 湖南卫视,https://zby.130519.xyz/PLTV/11/224/3221225726/index.m3u8
 湖北卫视,http://iptv.huuc.edu.cn/hls/hbhd.m3u8
