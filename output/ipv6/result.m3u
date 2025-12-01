@@ -6,9 +6,9 @@ https://live.chinacert.cftest5.cn/mg/?id=608807420
 #EXTINF:-1 tvg-name="CCTV1" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV1.png" group-title="央视频道",CCTV-1
 https://zby.130519.xyz/PLTV/11/224/3221225673/index.m3u8
 #EXTINF:-1 tvg-name="CCTV1" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV1.png" group-title="央视频道",CCTV-1
-https://zby.130519.xyz/PLTV/11/224/3221225723/index.m3u8
+https://mgsp-ws2.live.miguvideo.com/wd_r2/cctv/cctv1hd/1200/index.m3u8
 #EXTINF:-1 tvg-name="CCTV1" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV1.png" group-title="央视频道",CCTV-1
-https://zby.130519.xyz/PLTV/11/224/3221225770/index.m3u8
+https://zby.130519.xyz/PLTV/11/224/3221225723/index.m3u8
 #EXTINF:-1 tvg-name="CCTV2" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV2.png" group-title="央视频道",CCTV-2
 http://iptv.huuc.edu.cn/hls/cctv2hd.m3u8
 #EXTINF:-1 tvg-name="CCTV2" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV2.png" group-title="央视频道",CCTV-2
@@ -121,6 +121,8 @@ https://zby.130519.xyz/PLTV/11/224/3221226147/index.m3u8
 https://zby.130519.xyz/PLTV/11/224/3221226120/index.m3u8
 #EXTINF:-1 tvg-name="CCTV16" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV16.png" group-title="央视频道",CCTV-16
 http://livetv.wqwqwq.sbs/gaoma/cctv4k16.m3u8
+#EXTINF:-1 tvg-name="CCTV16" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV16.png" group-title="央视频道",CCTV-16
+http://lu.wqwqwq.sbs/itv/1000000006000233002.m3u8?cdn=ystenlive
 #EXTINF:-1 tvg-name="CCTV17" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CCTV17.png" group-title="央视频道",CCTV-17
 https://live.chinacert.cftest5.cn/mg/?id=673168256
 #EXTINF:-1 tvg-name="CETV1" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/CETV1.png" group-title="央视频道",CETV-1
@@ -273,6 +275,8 @@ https://zby.130519.xyz/PLTV/11/224/3221225747/index.m3u8
 https://live.chinacert.cftest5.cn/mg/?id=947472506
 #EXTINF:-1 tvg-name="青海卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/青海卫视.png" group-title="卫视频道",青海卫视
 https://zby.130519.xyz/PLTV/11/224/3221226105/index.m3u8
+#EXTINF:-1 tvg-name="青海卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/青海卫视.png" group-title="卫视频道",青海卫视
+http://lu.wqwqwq.sbs/itv/1000000002000013359.m3u8?cdn=ystenlive
 #EXTINF:-1 tvg-name="山西卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/山西卫视.png" group-title="卫视频道",山西卫视
 https://zby.130519.xyz/PLTV/11/224/3221226113/index.m3u8
 #EXTINF:-1 tvg-name="山西卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/山西卫视.png" group-title="卫视频道",山西卫视
