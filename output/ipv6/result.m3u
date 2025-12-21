@@ -167,8 +167,6 @@ https://live.chinacert.cftest5.cn/mg/?id=651632648
 http://iptv.huuc.edu.cn/hls/zjhd.m3u8
 #EXTINF:-1 tvg-name="浙江卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/浙江卫视.png" group-title="卫视频道",浙江卫视
 https://zby.130519.xyz/PLTV/11/224/3221225727/index.m3u8
-#EXTINF:-1 tvg-name="浙江卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/浙江卫视.png" group-title="卫视频道",浙江卫视
-http://ali-vl.cztv.com/channels/lantian/channel001/360p.m3u8
 #EXTINF:-1 tvg-name="湖南卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/湖南卫视.png" group-title="卫视频道",湖南卫视
 http://iptv.huuc.edu.cn/hls/hunanhd.m3u8
 #EXTINF:-1 tvg-name="湖南卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/湖南卫视.png" group-title="卫视频道",湖南卫视
@@ -275,6 +273,8 @@ https://zby.130519.xyz/PLTV/11/224/3221225747/index.m3u8
 https://live.chinacert.cftest5.cn/mg/?id=630291707
 #EXTINF:-1 tvg-name="青海卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/青海卫视.png" group-title="卫视频道",青海卫视
 https://zby.130519.xyz/PLTV/11/224/3221226105/index.m3u8
+#EXTINF:-1 tvg-name="青海卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/青海卫视.png" group-title="卫视频道",青海卫视
+http://lu.wqwqwq.sbs/itv/1000000002000013359.m3u8?cdn=ystenlive
 #EXTINF:-1 tvg-name="青海卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/青海卫视.png" group-title="卫视频道",青海卫视
 https://live.chinacert.cftest5.cn/mg/?id=947472506
 #EXTINF:-1 tvg-name="山西卫视" tvg-logo="https://raw.github.com/fanmingming/live/main/tv/山西卫视.png" group-title="卫视频道",山西卫视
